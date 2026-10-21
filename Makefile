@@ -119,6 +119,10 @@ md_src/%.o: md_src/%.cpp
 
 # sh2 stuff
 
+# SH-2 startup assembly embeds the M68000 startup binary.
+# Ensure the M68000 binary exists before assembling mars_start.s.
+sh_src/mars_start.o: $(MDTARGET).bin
+
 $(TARGET).32x: $(TARGET).elf
 	@echo "Stripping ELF header from SH-2 program"
 	@$(SHOBJC) -O binary $< temp.32x

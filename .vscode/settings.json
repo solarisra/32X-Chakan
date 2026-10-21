@@ -1,0 +1,5 @@
+{
+    "makefile.makefilePath": "${workspaceFolder}/Makefile",
+    "makefile.makeDirectory": "${workspaceFolder}",
+    "makefile.configureOnOpen": false
+}

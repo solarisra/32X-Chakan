@@ -1,0 +1,89 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "MarsDev: Build Release",
+            "type": "shell",
+            "command": "make",
+            "args": ["-j", "release"],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "MARSDEV": "/opt/toolchains/mars"
+                }
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "MarsDev: Build Debug",
+            "type": "shell",
+            "command": "make",
+            "args": ["-j", "debug"],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "MARSDEV": "/opt/toolchains/mars"
+                }
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "MarsDev: Clean",
+            "type": "shell",
+            "command": "make",
+            "args": ["clean"],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "MARSDEV": "/opt/toolchains/mars"
+                }
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "MarsDev: Rebuild Release",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "MarsDev: Clean",
+                "MarsDev: Build Release"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "MarsDev: Rebuild Debug",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "MarsDev: Clean",
+                "MarsDev: Build Debug"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "RetroArch: Run 32X",
+            "type": "shell",
+            "command": "retroarch",
+            "args": [
+                "-L",
+                "/home/christian/.config/retroarch/cores/picodrive_libretro.so",
+                "${workspaceFolder}/hello.32x"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "MarsDev: Build and Run 32X",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "MarsDev: Build Release",
+                "RetroArch: Run 32X"
+            ],
+            "problemMatcher": []
+        }
+    ]
+}
