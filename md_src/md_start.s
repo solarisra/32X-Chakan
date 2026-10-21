@@ -213,6 +213,10 @@ InitVDPRegs:
 	.global read_joypad
 read_joypad:
 		PAUSE_Z80
+	0:
+		move.w  (Z80_BUS_REQ),d0
+		andi.w  #0x0100,d0
+		bne.s   0b
 		lea		IO_DATA1,a0
 		move.b	5(sp),d0
 		beq.s	1f

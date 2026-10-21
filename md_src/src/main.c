@@ -1,4 +1,7 @@
 #include "common.h"
+#include "game_config.h"
+#include "snd/sound.h"
+#include "levels/test/test_small.h"
 
 // 32X COMM
 static volatile uint16_t* const mars_comm0  = (uint16_t*) MARS_COMM0;
@@ -15,6 +18,13 @@ static volatile uint32_t* const vdp_ctrl_wide = (uint32_t*) VDP_CTRL_PORT;
 extern uint16_t read_joypad(uint8_t player);
 
 uint32_t timer = 0;
+volatile uint16_t sh2_rendered_frames = 0;
+volatile uint16_t sh2_camera_x = 0, sh2_player_x = 0;
+volatile uint16_t sh2_profile[10];
+#if GAME_TEST_WIDE
+static uint16_t raster_clock;
+static uint8_t raster_last;
+#endif
 uint16_t vramOffset = 0;
 
 // It is recommended to put functions that run 1+ times every frame into RAM
@@ -32,13 +42,30 @@ void vdp_color(uint16_t index, uint16_t color) {
 
 __attribute__((section(".data")))
 void do_commands(void) {
+#if GAME_TEST_WIDE
+    uint8_t line = *(volatile uint16_t *)VDP_COUNTER >> 8;
+    uint8_t delta = line - raster_last;
+    /* NTSC V28 repeats six V-counter values at the end of the frame. */
+    if (delta > 128) delta = 1;
+    raster_clock += delta;
+    raster_last = line;
+    *(volatile uint16_t *)MARS_COMM10 = raster_clock;
+#endif
 	uint16_t cmd = *mars_comm0;
+    if (cmd & 0x8000) {
+        uint16_t index = (cmd >> 10) & 15;
+        if (index < 10) sh2_profile[index] = cmd & 1023;
+        *mars_comm0 = 0;
+        return;
+    }
 	switch(cmd >> 8) {
 	default: break; // Unknown command
 	case 0: return; // No command
 	case 3:
 		*mars_comm8 = read_joypad(cmd);
 		break;
+	case 9: /* SH-2 service-ready handshake. */
+        break;
 	case 4:
 		break;
 	case 5: // Set VRAM or Plane offset
@@ -58,21 +85,37 @@ void do_commands(void) {
 	*mars_comm0 = 0;
 }
 
-const uint16_t color_cycle[10] = { 0xEEE, 0xCCC, 0xAAA, 0x888, 0x666, 0x444, 0x666, 0x888, 0xAAA, 0xCCC };
-
 __attribute__((section(".data")))
 void main(void) {
-	uint16_t ticks = 0, col = 0;
+#if GAME_TEST_WIDE
+    /* Clear Genesis graphics; the 32X now owns the complete game image. */
+    *vdp_ctrl_port = 0x8134;
+    *vdp_ctrl_wide = 0x40000000;
+    for (uint32_t i = 0; i < 32768; i++) *vdp_data_port = 0;
+    *vdp_ctrl_wide = 0xC0000000;
+    for (uint16_t i = 0; i < 64; i++) *vdp_data_port = 0;
+    *vdp_ctrl_port = 0x8174;
+#else
+    test_small_init();
+#endif
+    sound_init();
+#if GAME_TEST_WIDE
+    raster_last = *(volatile uint16_t *)VDP_COUNTER >> 8;
+#endif
 	while(1) {
-		// Cycle background/border color
-		if(++ticks >= 8) {
-			ticks = 0;
-			if(++col >= 10) col = 0;
-		}
-		vdp_color(0, color_cycle[col]);
-		// TODO: Remove this after fixing _vblank
 		while(*vdp_ctrl_port & 8) do_commands();
 		while(!(*vdp_ctrl_port & 8)) do_commands();
+
+        sound_update();
+#if GAME_TEST_WIDE
+        *mars_comm8 = read_joypad(0);
+        sh2_rendered_frames = *(volatile uint16_t *)MARS_COMM2;
+        sh2_camera_x = *(volatile uint16_t *)MARS_COMM4;
+        sh2_player_x = *(volatile uint16_t *)MARS_COMM6;
+#else
+        test_small_update(read_joypad(0));
+#endif
+		do_commands();
 		*mars_comm12 = ++timer;
 	}
 }

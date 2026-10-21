@@ -13,8 +13,8 @@
 
 		.ascii	"SEGA 32X        "
 		.ascii	"SKYCHASE 2024.04"
-		.ascii	"SAMPLE PROGRAM                                  "
-		.ascii	"SAMPLE PROGRAM                                  "
+		.ascii	"CHAKAN REMAKE                                   "
+		.ascii	"CHAKAN REMAKE                                   "
 		.ascii	"GM CHANGEME-00  "
 		.ascii	"J6              "
 		.long	0x000000
@@ -76,7 +76,7 @@
 		.space	166			/* reserved */
 
 MARS_HEADER:
-		.ascii	"SAMPLE PROGRAM  "	/* module name (16 chars) */
+		.ascii	"CHAKAN REMAKE   "	/* module name (16 chars) */
 		.long	0x00000000			/* version */
 		.long	_stext				/* Source (in ROM) */
 		.long	0x00000000			/* Destination (in SDRAM) */
@@ -269,6 +269,7 @@ mcont:
 		nop
 
 ! let Slave SH2 run
+		mov.l   _master_sts,r0 /* init call changed r0; restore COMM base */
 		mov     #0,r1
 		mov.l   r1,@(4,r0)  /* clear slave status */
 

@@ -4,6 +4,8 @@
 *.bin
 *.32x
 *.lst
+*.d
+/md_src/res/test_small_data.h
 
 # Temporary files
 *.tmp
@@ -21,3 +23,8 @@ __pycache__/
 # OS files
 .DS_Store
 Thumbs.db
+
+/md_src/res/sprites.h
+
+/build/
+/sh_src/res/test_wide_data.h

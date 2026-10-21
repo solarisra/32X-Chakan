@@ -8,7 +8,14 @@ TOOLSBIN = $(MARSDEV)/bin
 MDBIN    = $(MARSDEV)/m68k-elf/bin
 SHBIN    = $(MARSDEV)/sh-elf/bin
 
-TARGET  ?= hello
+TARGET  ?= Chakan
+PYTHON ?= python3
+GAME ?= TEST_WIDE
+ifeq ($(filter $(GAME),TEST_WIDE TEST_SMALL),)
+$(error GAME must be TEST_WIDE or TEST_SMALL)
+endif
+# Update only on a backend change, before make reads compiler dependencies.
+CONFIGURE_GAME := $(shell $(PYTHON) sh_src/tools/configure_game.py $(GAME))
 MDTARGET = md_start
 
 # m68k GCC and Binutils
@@ -34,9 +41,9 @@ SHCC_VER := $(shell $(SHCC) -dumpversion)
 MDPLUGIN = $(MARSDEV)/m68k-elf/libexec/gcc/m68k-elf/$(MDCC_VER)/liblto_plugin.so
 SHPLUGIN = $(MARSDEV)/sh-elf/libexec/gcc/sh-elf/$(SHCC_VER)/liblto_plugin.so
 
-MDINCS   = -Isrc_md -Iinc_md
+MDINCS   = -Imd_src/inc -Imd_src/res -Imd_src/src -Ibuild
 MDINCS  += -I$(MARSDEV)/m68k-elf/lib/gcc/m68k-elf/$(MDCC_VER)/include
-SHINCS   = -Isrc -Iinc
+SHINCS   = -Ish_src -Ish_src/inc -Ish_src/res -Ish_src/src -Ibuild
 SHINCS  += -I$(MARSDEV)/sh-elf/lib/gcc/sh-elf/$(SHCC_VER)/include
 
 MDLIBS   = -L$(MARSDEV)/m68k-elf/lib/gcc/m68k-elf/$(MDCC_VER) -lgcc
@@ -49,7 +56,7 @@ SHCCFLAGS  = -m2 -mb -Wall -Wextra -pedantic -std=c99 -ffreestanding
 SHCXXFLAGS = -m2 -mb -Wall -Wextra -pedantic -std=c++17 -ffreestanding
 
 # Assembler flags
-MDASFLAGS  = -x assembler-with-cpp -Imd_src -m68000 -Wa,--register-prefix-optional
+MDASFLAGS  = -x assembler-with-cpp -Imd_src/inc -m68000 -Wa,--register-prefix-optional
 SHASFLAGS  = -Ish_src --small
 
 # Linker flags
@@ -61,16 +68,16 @@ MDEXTRA =
 SHEXTRA = 
 
 # Generate m68k object target list
-MDSS    = $(wildcard md_src/*.s)
-MDCS    = $(wildcard md_src/*.c)
-MDCPPS  = $(wildcard md_src/*.cpp)
+MDSS    = $(wildcard md_src/*.s md_src/res/*.s)
+MDCS    = $(shell find md_src/src -type f -name '*.c' | sort)
+MDCPPS  = $(shell find md_src/src -type f -name '*.cpp' | sort)
 MDOBJS  = $(MDSS:.s=.o)
 MDOBJS += $(MDCS:.c=.o)
 MDOBJS += $(MDCPPS:.cpp=.o)
 
 # Generate sh object target list
 SHSS    = $(wildcard sh_src/*.s)
-SHCS    = $(wildcard sh_src/*.c)
+SHCS    = $(wildcard sh_src/*.c) $(shell find sh_src/src -type f -name '*.c' | sort)
 SHCPPS  = $(wildcard sh_src/*.cpp)
 SHOBJS  = $(SHSS:.s=.o)
 SHOBJS += $(SHCS:.c=.o)
@@ -79,6 +86,28 @@ SHOBJS += $(SHCPPS:.cpp=.o)
 .PHONY: all release debug
 
 all: release
+
+# Track headers as well as source files for both CPUs.
+-include $(MDCS:.c=.d) $(SHCS:.c=.d)
+
+md_src/res/test_small_data.h: md_src/tools/convert_test_level.py md_src/res/levels/Hub/fg_test_level.png md_src/res/levels/Hub/portal_starfield.png md_src/src/levels/test/test_small_collision.json
+	$(PYTHON) md_src/tools/convert_test_level.py
+
+md_src/src/levels/test/test_small.o: md_src/res/test_small_data.h
+
+md_src/res/sprites.h: md_src/tools/convert_sprites.py md_src/tools/convert_test_level.py md_src/res/sprites/Chakan/chakan_anim_no_weapons.png
+	$(PYTHON) md_src/tools/convert_sprites.py
+
+md_src/src/player_sprite.o: md_src/res/sprites.h
+
+md_src/res/music_stage_select.bin: md_src/res/music/02\ -\ Stage\ Select.vgm
+	$(MDBIN)/xgmtool "$<" $@ -s -n
+
+md_src/res/drv_xgm.bin: md_src/src/snd/drv_xgm.s80 md_src/inc/snd/z80_def.i80 md_src/inc/snd/z80_mac.i80 md_src/inc/snd/z80_fct.i80
+	$(MDBIN)/sjasm -imd_src/inc/snd $< $@ md_src/res/drv_xgm.lst
+
+md_src/res/music.o: md_src/res/music_stage_select.bin md_src/res/drv_xgm.bin
+
 
 release: MDEXTRA  = -O2 -fomit-frame-pointer -flto -fuse-linker-plugin
 release: SHEXTRA  = -Ofast -fomit-frame-pointer -flto -fuse-linker-plugin
@@ -111,13 +140,20 @@ md_src/%.o: md_src/%.s
 
 md_src/%.o: md_src/%.c
 	@echo "MDCC $<"
-	@$(MDCC) $(MDCCFLAGS) $(MDEXTRA) $(MDINCS) -c $< -o $@
+	@$(MDCC) $(MDCCFLAGS) $(MDEXTRA) $(MDINCS) -MMD -MP -c $< -o $@
 
 md_src/%.o: md_src/%.cpp
 	@echo "MDCXX $<"
 	@$(MDCXX) $(MDCXXFLAGS) $(MDEXTRA) $(MDINCS) -c $< -o $@
 
 # sh2 stuff
+
+sh_src/res/test_wide_data.h: sh_src/tools/convert_test_wide.py sh_src/tools/indexed_png.py sh_src/res/levels/Hub/fg_test_level_wide.png sh_src/res/levels/Hub/portal_starfield.png sh_src/res/sprites/Chakan/chakan_anim_no_weapons.png sh_src/src/levels/test/test_wide_collision.json
+	$(PYTHON) sh_src/tools/convert_test_wide.py
+
+sh_src/src/levels/test/test_wide.o: sh_src/res/test_wide_data.h
+
+md_src/src/main.o sh_src/m_main.o sh_src/s_main.o: build/game_config.h
 
 # SH-2 startup assembly embeds the M68000 startup binary.
 # Ensure the M68000 binary exists before assembling mars_start.s.
@@ -138,7 +174,7 @@ sh_src/%.o: sh_src/%.s
 
 sh_src/%.o: sh_src/%.c
 	@echo "SHCC $<"
-	@$(SHCC) $(SHCCFLAGS) $(SHEXTRA) $(SHINCS) -c $< -o $@
+	@$(SHCC) $(SHCCFLAGS) $(SHEXTRA) $(SHINCS) -MMD -MP -c $< -o $@
 
 sh_src/%.o: sh_src/%.cpp
 	@echo "SHCXX $<"
@@ -147,7 +183,9 @@ sh_src/%.o: sh_src/%.cpp
 .PHONY: clean
 
 clean:
-	rm -f $(MDOBJS) $(SHOBJS)
+	rm -f $(MDOBJS) $(SHOBJS) $(MDCS:.c=.d) $(SHCS:.c=.d)
+	rm -f md_src/res/test_small_data.h md_src/res/sprites.h sh_src/res/test_wide_data.h
+	rm -f md_src/res/music_stage_select.bin md_src/res/drv_xgm.bin md_src/res/drv_xgm.lst
 	rm -f $(MDTARGET).bin $(MDTARGET).elf $(MDTARGET).lst
 	rm -f $(TARGET).32x $(TARGET).elf $(TARGET).lst
 	rm -f m68k_crt0.bin.o m68k_crt0.bin

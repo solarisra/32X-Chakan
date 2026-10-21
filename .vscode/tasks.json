@@ -5,7 +5,10 @@
             "label": "MarsDev: Build Release",
             "type": "shell",
             "command": "make",
-            "args": ["-j", "release"],
+            "args": [
+                "-j",
+                "release"
+            ],
             "options": {
                 "cwd": "${workspaceFolder}",
                 "env": {
@@ -22,7 +25,10 @@
             "label": "MarsDev: Build Debug",
             "type": "shell",
             "command": "make",
-            "args": ["-j", "debug"],
+            "args": [
+                "-j",
+                "debug"
+            ],
             "options": {
                 "cwd": "${workspaceFolder}",
                 "env": {
@@ -35,7 +41,9 @@
             "label": "MarsDev: Clean",
             "type": "shell",
             "command": "make",
-            "args": ["clean"],
+            "args": [
+                "clean"
+            ],
             "options": {
                 "cwd": "${workspaceFolder}",
                 "env": {
@@ -69,7 +77,7 @@
             "args": [
                 "-L",
                 "/home/christian/.config/retroarch/cores/picodrive_libretro.so",
-                "${workspaceFolder}/hello.32x"
+                "${workspaceFolder}/Chakan.32x"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -83,6 +91,23 @@
                 "MarsDev: Build Release",
                 "RetroArch: Run 32X"
             ],
+            "problemMatcher": []
+        },
+        {
+            "label": "MarsDev: Build Genesis TEST_SMALL",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "-j",
+                "GAME=TEST_SMALL",
+                "release"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "MARSDEV": "/opt/toolchains/mars"
+                }
+            },
             "problemMatcher": []
         }
     ]
