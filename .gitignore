@@ -1,0 +1,23 @@
+# MarsDev build artifacts
+*.o
+*.elf
+*.bin
+*.32x
+*.lst
+
+# Temporary files
+*.tmp
+*.bak
+*~
+
+# VS Code user-specific files
+.vscode/*.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# OS files
+.DS_Store
+Thumbs.db
