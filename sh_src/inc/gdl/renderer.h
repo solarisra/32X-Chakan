@@ -10,12 +10,14 @@
 /* Version 1 packed rows, containing final 8-bit palette indices.
  * Foreground row: pixels[2], transparent masks[2], kind (0 empty/1 opaque/2 mixed).
  * Background row: pixels[2]. Map entries are uint16_t offsets measured in uint32_t words.
+ * Compact foreground maps instead index tile_rows (eight row offsets per tile).
  * Tiles are 8x8; foreground tile stride is 40 words, background stride 16 words.
  */
 typedef struct {
     const uint32_t *tiles;
     const uint16_t *map;
     uint16_t width_tiles, height_tiles;
+    const uint16_t *tile_rows; /* Optional compact foreground row offsets; NULL for fixed stride. */
 } GdlTilemap;
 
 typedef struct {
@@ -32,6 +34,7 @@ typedef struct {
     int16_t x, y; /* Viewport coordinates; clipping is performed by the renderer. */
     uint16_t frame;
     bool flip;
+    bool behind_foreground; /* Terrain occludes this sprite; default false. */
 } GdlSprite;
 
 typedef struct {

@@ -99,3 +99,21 @@ The extracted version completed 7176 renders in a 7200-VBlank PicoDrive run,
 including startup. After the first interval, every measured 60-VBlank interval
 completed exactly 60 renders. Music continued; camera/player bounds still reached
 1120/1398. Real hardware, PAL and other cores remain unverified.
+
+## Portal Hub extensions
+
+`GdlTilemap.tile_rows` optionally points to a compact foreground row directory.
+When present, map values index that directory, with eight offsets per tile;
+each directory value selects the usual five-word packed foreground row. NULL
+retains the original fixed-stride layout. Duplicate rows can share storage.
+
+`GdlSprite.behind_foreground` enables terrain occlusion for environmental
+sprites. Foreground transparency masks provide coverage; sprites without the
+flag retain the original frontmost behavior. The direct renderer remains a
+separate optimized path for scenes that need neither extension.
+
+`gdl_palette_schedule` copies colors into a pending palette and applies them
+at the next completed flip. It preserves gaps between queued ranges from the
+backend's palette shadow. `gdl_palette_load` is a blocking initial load and
+waits for palette access. Resource packing now also supports deduplicating
+identical opaque runs without changing the span decoder.

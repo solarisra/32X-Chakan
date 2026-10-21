@@ -21,7 +21,7 @@ uint32_t timer = 0;
 volatile uint16_t sh2_rendered_frames = 0;
 volatile uint16_t sh2_camera_x = 0, sh2_player_x = 0;
 volatile uint16_t sh2_profile[10];
-#if GAME_TEST_WIDE
+#if GAME_SH2
 static uint16_t raster_clock;
 static uint8_t raster_last;
 #endif
@@ -42,7 +42,7 @@ void vdp_color(uint16_t index, uint16_t color) {
 
 __attribute__((section(".data")))
 void do_commands(void) {
-#if GAME_TEST_WIDE
+#if GAME_SH2
     uint8_t line = *(volatile uint16_t *)VDP_COUNTER >> 8;
     uint8_t delta = line - raster_last;
     /* NTSC V28 repeats six V-counter values at the end of the frame. */
@@ -87,7 +87,7 @@ void do_commands(void) {
 
 __attribute__((section(".data")))
 void main(void) {
-#if GAME_TEST_WIDE
+#if GAME_SH2
     /* Clear Genesis graphics; the 32X now owns the complete game image. */
     *vdp_ctrl_port = 0x8134;
     *vdp_ctrl_wide = 0x40000000;
@@ -99,7 +99,7 @@ void main(void) {
     test_small_init();
 #endif
     sound_init();
-#if GAME_TEST_WIDE
+#if GAME_SH2
     raster_last = *(volatile uint16_t *)VDP_COUNTER >> 8;
 #endif
 	while(1) {
@@ -107,7 +107,7 @@ void main(void) {
 		while(!(*vdp_ctrl_port & 8)) do_commands();
 
         sound_update();
-#if GAME_TEST_WIDE
+#if GAME_SH2
         *mars_comm8 = read_joypad(0);
         sh2_rendered_frames = *(volatile uint16_t *)MARS_COMM2;
         sh2_camera_x = *(volatile uint16_t *)MARS_COMM4;

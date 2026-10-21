@@ -93,7 +93,10 @@ def generate():
     grid = []
     for row in collision['rows_rle']:
         cells = []
-        for run in row:
+        for encoded_run in row:
+            if not isinstance(encoded_run, str) or len(encoded_run) != 6 or not encoded_run.startswith("0x"):
+                raise ValueError("collision runs must use four-digit hexadecimal strings: 0xTTCC")
+            run = int(encoded_run, 16)
             tile, count = run >> 8, run & 255
             if tile not in (0, 1) or count == 0:
                 raise ValueError('unsupported collision run')

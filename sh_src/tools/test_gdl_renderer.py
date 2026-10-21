@@ -15,7 +15,7 @@ class GdlRendererTests(unittest.TestCase):
                             '-Wall', '-Wextra', '-Werror', '-fsanitize=undefined',
                             '-fno-sanitize-recover=undefined', '-I' + str(ROOT / 'inc'),
                             str(ROOT / 'tools/tests/renderer_test.c'),
-                            str(ROOT / 'src/gdl/renderer.c'), '-o', binary], check=True)
+                            str(ROOT / 'src/gdl/renderer.c'), str(ROOT / 'src/gdl/renderer_direct.c'), '-o', binary], check=True)
             subprocess.run([binary], check=True)
 
 

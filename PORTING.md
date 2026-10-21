@@ -5,9 +5,85 @@ while retaining the MarsDev 32X ROM boot structure. The SH-2 master initializes
 the 32X in transparent 8-bit mode; Genesis-side rendering remains responsible
 for the game image.
 
-## Current default: SH-2 TEST_WIDE experiment
+## Current default: Portal Hub on 32X
 
-`make` now builds `TEST_WIDE` with both SH-2 processors and the 32X VDP.
+```sh
+MARSDEV=/opt/toolchains/mars make GAME=PORTAL_HUB
+```
+
+`make` now selects PORTAL_HUB by default. Output remains `Chakan.32x` and the
+existing VS Code Build/Run tasks use it. `GAME=TEST_WIDE` and `GAME=TEST_SMALL`
+remain selectable. Portal Hub code follows the original relative layout under
+`sh_src/src/levels/hub/`; source art stays under `sh_src/res/levels/Hub/` and
+`sh_src/res/sprites/Scenery/Hub/`.
+
+Implemented content:
+
+- Original 1920x1280 foreground with both terrain palettes, repeating starfield
+  and its vertical drift, and original spawn (756,720) in sprite-origin space.
+- Original 120x80 collision grid, with all RLE runs preserved unchanged. ID 1 is
+  solid; collision-map IDs 2..6 preserve the portal markers. Collision JSON
+  stores each RLE word as a four-digit hexadecimal string (`"0xTTCC"`):
+  `TT` is the tile index and `CC` is the consecutive cell count in that row.
+  For example, `"0x010A"` means ten cells of tile 1. This format is shared by
+  Portal Hub, TEST_WIDE and TEST_SMALL; runs never cross row boundaries.
+  The source defines
+  their non-solid `TILE_BEHAVIOR_DOOR` descriptors in
+  `src/level_collision/collision_heightmaps.c`: Air=1, Earth=2, Fire=3,
+  Water=4, Elemental=5 (behavior IDs). The SH-2 port currently preserves the
+  map markers but still needs those behavior descriptors and overlap reporting
+  migrated. Destination transitions are a separate step; no wired player
+  door-transition handler was found in the source.
+- Original Chakan animations and collider, SH-2 movement, bounded two-axis camera
+  (x=0..1600, y=0..1056), and respawn after falling out of the world.
+- Four portal sprites at original positions, nine flames with six-frame
+  animation, camera culling and source-style foreground occlusion. The player
+  remains in front of terrain. Planet routines are not called by the source Hub
+  and were not added to its scene.
+- Twenty-tick fade-in, followed by palette cycling of colors 27..31 every eight
+  updates. Palette changes queue for the next completed VBlank presentation;
+  direct palette loads wait for the VDP palette-access flag.
+- Stage Select music continues through the existing 68000/Z80 audio service.
+
+The new converter packs duplicate foreground rows and duplicate opaque sprite
+runs. Terrain row storage falls from 125440 bytes to 58864 bytes, making room
+for the complete 76800-byte map in SDRAM. All Hub drawing resources are resident
+before frame submission. The linker reserves the top 8KiB for master/slave
+stacks and rejects data overlaps; the current data end is around 239KiB.
+The generated header is `sh_src/res/portal_hub_data.h`.
+
+Shared player animation selection now lives in `sh_src/src/player_sprite.c`.
+GDL supports an optional compact tile-row directory and a per-sprite
+`behind_foreground` flag. Its direct-row fast path remains separate for the
+existing test renderer. The scene still uses both SH-2s and the 32X framebuffer;
+Genesis graphics are cleared and do not draw the Hub.
+
+### Hub validation and remaining limits
+
+```sh
+python3 -m unittest discover -s sh_src/tools
+python3 -m unittest discover -s md_src/tools
+python3 sh_src/tools/convert_portal_hub.py --check
+python3 md_src/tools/check_audio.py --core /home/christian/.config/retroarch/cores/picodrive_libretro.so --portal-hub --frames 1200
+```
+
+Tests reconstruct the compact terrain against the original image, verify both
+palette banks, all collision row widths, preserved door markers, and every
+scenery sprite in both facings. The actual C renderer is checked for compact
+rows and foreground occlusion. A scripted PicoDrive traversal reaches player
+x=1878 and camera x=1600 while audio continues; captured frames were inspected.
+
+Portal Hub does **not** yet sustain 60fps through all tested views. The current
+1200-VBlank traversal averages approximately 54.3 rendered fps after warmup,
+with sampled intervals ranging 39–60. Simulation follows the VBlank clock with
+bounded catch-up. Further optimization is needed for dense terrain and scenery;
+RetroArch's output counter alone cannot detect those missed render intervals.
+TEST_WIDE's comparison run remains above 59.9 rendered fps. Real hardware/PAL,
+portal destination levels, menus and sound effects remain unverified or unported.
+
+## TEST_WIDE comparison (previous default)
+
+`GAME=TEST_WIDE` builds the comparison scene with both SH-2 processors and the 32X VDP.
 The Genesis `TEST_SMALL` version remains selectable without cleaning:
 
 ```sh
@@ -16,7 +92,7 @@ MARSDEV=/opt/toolchains/mars make GAME=TEST_SMALL
 ```
 
 Both use the existing `Chakan.32x` output and VS Code run task. The default
-release/debug tasks select TEST_WIDE; a separate VS Code task builds Genesis
+release/debug tasks now select PORTAL_HUB; a separate VS Code task builds Genesis
 TEST_SMALL. A generated `build/game_config.h` tracks backend changes so switching
 recompiles both CPU entry points and rebuilds the embedded 68000 image.
 

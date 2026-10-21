@@ -13,3 +13,10 @@ Collision rows and spawn from original `src/levels/test/test_wide.c` are recorde
 in `../src/levels/test/test_wide_collision.json`. The last two all-empty rows
 were corrected from a 144-cell run to the declared 90-cell map width. The
 source artwork retains its original ownership and provenance.
+
+Portal Hub assets now also preserve `levels/Hub/portal_hub_fg1.png`, its two
+palette PNGs, and the flame and four portal PNGs under `sprites/Scenery/Hub/`.
+All images are unchanged copies from Chakan_Remake_v1. `convert_portal_hub.py`
+builds `portal_hub_data.h` using the common packing helpers in `gdl_assets.py`.
+`src/levels/hub/portal_hub_collision.json` records the original collision RLE
+verbatim, including non-solid door IDs. No sibling checkout is needed to build.

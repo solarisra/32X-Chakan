@@ -109,6 +109,23 @@
                 }
             },
             "problemMatcher": []
+        },
+        {
+            "label": "MarsDev: Build SH-2 TEST_WIDE",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "-j",
+                "GAME=TEST_WIDE",
+                "release"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "MARSDEV": "/opt/toolchains/mars"
+                }
+            },
+            "problemMatcher": []
         }
     ]
 }

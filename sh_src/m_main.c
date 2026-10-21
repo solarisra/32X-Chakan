@@ -1,19 +1,29 @@
 #include "mars.h"
 #include "game_config.h"
 #include "profile.h"
-#if GAME_TEST_WIDE
+#if GAME_SH2
+#if GAME_PORTAL_HUB
+#include "levels/hub/portal_hub.h"
+#define level_init portal_hub_init
+#define level_update portal_hub_update
+#define level_render_frame portal_hub_render_frame
+#else
 #include "levels/test/test_wide.h"
+#define level_init test_wide_init
+#define level_update test_wide_update
+#define level_render_frame test_wide_render_frame
+#endif
 #include "player.h"
 #include "camera.h"
 #endif
 
 int m_main(void) {
-#if GAME_TEST_WIDE
+#if GAME_SH2
     gdl_video_init();
     while (MARS_SYS_COMM0) {}
     MARS_SYS_COMM0 = 0x0900;
     while (MARS_SYS_COMM0) {}
-    test_wide_init();
+    level_init();
     profile_timer_init();
     uint32_t totals[5] = {0};
     uint16_t maxima[5] = {0};
@@ -28,12 +38,12 @@ int m_main(void) {
         uint16_t duration[5];
         uint16_t stamp = profile_timer_read();
         uint16_t pad = MARS_SYS_COMM8;
-        for (uint32_t i = 0; i < elapsed; i++) test_wide_update(pad);
+        for (uint32_t i = 0; i < elapsed; i++) level_update(pad);
         duration[0] = profile_timer_read() - stamp;
         MARS_SYS_COMM4 = cameraPosition.x;
         MARS_SYS_COMM6 = playerBody.x;
         GdlRenderTiming timing;
-        uint32_t sequence = gdl_render_frame(test_wide_render_frame(), &timing);
+        uint32_t sequence = gdl_render_frame(level_render_frame(), &timing);
         if (!sequence) continue;
         duration[1] = timing.master_draw;
         duration[2] = timing.slave_draw;

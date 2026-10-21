@@ -72,10 +72,13 @@ class WideTests(unittest.TestCase):
     def test_collision_rows(self):
         data = json.loads((ROOT / 'src/levels/test/test_wide_collision.json').read_text())
         self.assertEqual(len(data['rows_rle']), 15)
-        for row in data['rows_rle']:
+        for encoded_row in data['rows_rle']:
+            for run in encoded_row:
+                self.assertRegex(run, r'^0x[0-9A-F]{4}$')
+            row = [int(run, 16) for run in encoded_row]
             self.assertEqual(sum(run & 255 for run in row), 90)
             self.assertTrue(all(run >> 8 in (0, 1) for run in row))
-        self.assertEqual(data['rows_rle'][-2:], [[0x5A], [0x5A]])
+        self.assertEqual(data['rows_rle'][-2:], [['0x005A'], ['0x005A']])
 
     def test_sh2_movement_and_camera(self):
         with tempfile.TemporaryDirectory() as temp:

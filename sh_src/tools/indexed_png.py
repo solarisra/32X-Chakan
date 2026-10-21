@@ -3,7 +3,7 @@ import struct
 import zlib
 
 
-def read_png(path):
+def read_png(path, max_colors=16, tiled=True):
     data = path.read_bytes()
     if data[:8] != b'\x89PNG\r\n\x1a\n':
         raise ValueError(f'{path}: invalid PNG signature')
@@ -26,7 +26,7 @@ def read_png(path):
         elif kind == b'IEND':
             break
         pos += size + 12
-    if width % 8 or height % 8 or palette is None:
+    if (tiled and (width % 8 or height % 8)) or palette is None:
         raise ValueError(f'{path}: invalid tile dimensions or missing palette')
     raw = zlib.decompress(compressed)
     if len(raw) != (width + 1) * height:
@@ -49,8 +49,8 @@ def read_png(path):
             row[x] = (row[x] + predictor) & 255
         rows.append(row)
         previous = row
-    if max(max(row) for row in rows) >= min(16, len(palette)):
-        raise ValueError(f'{path}: this slice requires one 16-color palette')
-    colors = [(b >> 5) << 9 | (g >> 5) << 5 | (r >> 5) << 1 for r, g, b in palette[:16]]
-    return width, height, rows, colors + [0] * (16 - len(colors))
+    if max(max(row) for row in rows) >= min(max_colors, len(palette)):
+        raise ValueError(f'{path}: palette indices exceed {max_colors} colors')
+    colors = [(b >> 5) << 9 | (g >> 5) << 5 | (r >> 5) << 1 for r, g, b in palette[:max_colors]]
+    return width, height, rows, colors + [0] * (max_colors - len(colors))
 

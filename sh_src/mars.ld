@@ -91,6 +91,8 @@ SECTIONS {
 		end = _end;
 	} > ram
 
+	ASSERT(__end <= 0x0603E000, "SH-2 data overlaps reserved master/slave stacks")
+
 	.eh_frame 0 (NOLOAD) :
 	{
 		*(.eh_frame)

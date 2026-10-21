@@ -14,8 +14,11 @@ def main():
     parser.add_argument('--rom', default='Chakan.32x')
     parser.add_argument('--frames', type=int, default=7200)
     parser.add_argument('--min-render-fps', type=float, default=0, help='minimum mean rendered frames per 60-frame interval after warmup')
+    parser.add_argument('--portal-hub', action='store_true', help='drive Portal Hub and verify SH-2 map bounds')
     parser.add_argument('--wide', action='store_true', help='drive TEST_WIDE and verify SH-2 frame/camera telemetry')
     args = parser.parse_args()
+    if args.portal_hub:
+        args.wide = True
     if args.min_render_fps and not args.wide:
         parser.error('--min-render-fps requires --wide')
     if args.frames < 600:
@@ -149,8 +152,8 @@ def main():
                 raise SystemExit('Renderer failed its requested performance threshold')
         if telemetry.get('sh2_rendered_frames', 0) < 100:
             raise SystemExit('Dual-SH-2 renderer did not progress')
-        if args.frames >= 1200 and (telemetry.get('sh2_camera_x') != 1120 or telemetry.get('sh2_player_x') != 1398):
-            raise SystemExit('TEST_WIDE did not reach the rightmost world/camera bounds')
+        if args.frames >= 1200 and (telemetry.get('sh2_camera_x') != (1600 if args.portal_hub else 1120) or telemetry.get('sh2_player_x') != (1878 if args.portal_hub else 1398)):
+            raise SystemExit('SH-2 level did not reach the rightmost world/camera bounds')
     if stats['video'] != args.frames or not periods or not all(periods):
         raise SystemExit('Audio/video smoke check failed')
 

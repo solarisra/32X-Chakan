@@ -2,7 +2,6 @@
 *.o
 *.elf
 *.bin
-*.32x
 *.lst
 *.d
 /md_src/res/test_small_data.h
@@ -28,3 +27,5 @@ Thumbs.db
 
 /build/
 /sh_src/res/test_wide_data.h
+
+/sh_src/res/portal_hub_data.h

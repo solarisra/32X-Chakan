@@ -10,9 +10,9 @@ SHBIN    = $(MARSDEV)/sh-elf/bin
 
 TARGET  ?= Chakan
 PYTHON ?= python3
-GAME ?= TEST_WIDE
-ifeq ($(filter $(GAME),TEST_WIDE TEST_SMALL),)
-$(error GAME must be TEST_WIDE or TEST_SMALL)
+GAME ?= PORTAL_HUB
+ifeq ($(filter $(GAME),PORTAL_HUB TEST_WIDE TEST_SMALL),)
+$(error GAME must be PORTAL_HUB, TEST_WIDE or TEST_SMALL)
 endif
 # Update only on a backend change, before make reads compiler dependencies.
 CONFIGURE_GAME := $(shell $(PYTHON) sh_src/tools/configure_game.py $(GAME))
@@ -153,6 +153,12 @@ sh_src/res/test_wide_data.h: sh_src/tools/convert_test_wide.py sh_src/tools/inde
 
 sh_src/src/levels/test/test_wide.o: sh_src/res/test_wide_data.h
 
+
+sh_src/res/portal_hub_data.h: sh_src/tools/convert_portal_hub.py sh_src/tools/gdl_assets.py sh_src/tools/indexed_png.py $(wildcard sh_src/res/levels/Hub/portal*.png) $(wildcard sh_src/res/sprites/Scenery/Hub/*.png) sh_src/res/sprites/Chakan/chakan_anim_no_weapons.png sh_src/src/levels/hub/portal_hub_collision.json
+	$(PYTHON) sh_src/tools/convert_portal_hub.py
+
+sh_src/src/levels/hub/portal_hub.o sh_src/src/levels/hub/hub_sprites.o: sh_src/res/portal_hub_data.h
+
 md_src/src/main.o sh_src/m_main.o sh_src/s_main.o: build/game_config.h
 
 # SH-2 startup assembly embeds the M68000 startup binary.
@@ -165,8 +171,8 @@ $(TARGET).32x: $(TARGET).elf
 	@dd if=temp.32x of=$@ bs=8192 conv=sync
 	@rm -f temp.32x
 
-$(TARGET).elf: $(SHOBJS)
-	$(SHCC) $(SHLDFLAGS) $^ -o $@ $(SHLIBS)
+$(TARGET).elf: $(SHOBJS) sh_src/mars.ld
+	$(SHCC) $(SHLDFLAGS) $(SHOBJS) -o $@ $(SHLIBS)
 
 sh_src/%.o: sh_src/%.s 
 	@echo "SHAS $<"
@@ -184,7 +190,7 @@ sh_src/%.o: sh_src/%.cpp
 
 clean:
 	rm -f $(MDOBJS) $(SHOBJS) $(MDCS:.c=.d) $(SHCS:.c=.d)
-	rm -f md_src/res/test_small_data.h md_src/res/sprites.h sh_src/res/test_wide_data.h
+	rm -f md_src/res/test_small_data.h md_src/res/sprites.h sh_src/res/test_wide_data.h sh_src/res/portal_hub_data.h
 	rm -f md_src/res/music_stage_select.bin md_src/res/drv_xgm.bin md_src/res/drv_xgm.lst
 	rm -f $(MDTARGET).bin $(MDTARGET).elf $(MDTARGET).lst
 	rm -f $(TARGET).32x $(TARGET).elf $(TARGET).lst

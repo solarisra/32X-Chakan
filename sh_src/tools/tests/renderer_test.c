@@ -70,10 +70,12 @@ static void check_frame(const GdlScene *scene, const GdlFrame *frame) {
             int wx = x + frame->camera_x, wy = y + frame->camera_y;
             int tile = ((wx / 8) + (wy / 8)) % 3;
             uint8_t expected = foreground(tile, wx & 7, wy & 7);
+            int terrain_opaque = expected != 0;
             if (!expected) expected = background(wx & 7, (y + frame->background_y) & 7);
             for (int i = 0; i < frame->sprite_count; i++) {
                 const GdlSprite *sprite = frame->sprites + i;
                 int sx = x - sprite->x, sy = y - sprite->y;
+                if (sprite->behind_foreground && terrain_opaque) continue;
                 if (sx >= 0 && sx < 5 && sy >= 0 && sy < 3) {
                     uint8_t pixel = sprite_pixel(sprite->frame, sprite->flip, sx, sy);
                     if (pixel) expected = pixel;
@@ -91,7 +93,7 @@ static void check_frame(const GdlScene *scene, const GdlFrame *frame) {
 }
 int main(void) {
     prepare();
-    GdlScene scene = {{fg_tiles, fg_map, 48, 30}, {bg_tiles, bg_map, 1, 1}};
+    GdlScene scene = {{fg_tiles, fg_map, 48, 30, 0}, {bg_tiles, bg_map, 1, 1, 0}};
     assert(gdl_scene_valid(&scene));
     GdlFrame frame = {0};
     frame.background_y = 5;
@@ -102,14 +104,27 @@ int main(void) {
         for (unsigned p = 0; p < sizeof(positions) / sizeof(positions[0]); p++) {
             frame.camera_x = camera;
             frame.camera_y = (p & 1) ? 16 : 0;
-            frame.sprites[0] = (GdlSprite){&image, positions[p], -1, 0, false};
-            frame.sprites[1] = (GdlSprite){&image, 1, 0, 1, true};
+            frame.sprites[0] = (GdlSprite){&image, positions[p], -1, 0, false, false};
+            frame.sprites[1] = (GdlSprite){&image, 1, 0, 1, true, false};
+            frame.sprites[0].behind_foreground = (p & 1) != 0;
             check_frame(&scene, &frame);
         }
     frame.sprites[0].y = 222; /* Bottom clipping and overlapping sprites. */
     frame.sprites[0].x = 2;
     frame.sprites[1].y = 223;
     check_frame(&scene, &frame);
+    /* The optional compact row directory must produce the same pixels. */
+    uint16_t compact_map[48 * 30], compact_rows[3 * 8];
+    for (int i = 0; i < 48 * 30; i++) compact_map[i] = fg_map[i] / 5;
+    for (int i = 0; i < 3 * 8; i++) compact_rows[i] = i * 5;
+    scene.foreground.map = compact_map;
+    scene.foreground.tile_rows = compact_rows;
+    for (int camera = 0; camera < 8; camera++) {
+        frame.camera_x = camera;
+        frame.sprites[0].y = 0;
+        frame.sprites[0].behind_foreground = true;
+        check_frame(&scene, &frame);
+    }
     frame.camera_x = -1;
     assert(!gdl_frame_valid(&scene, &frame));
     frame.camera_x = 65; /* 384px world, 320px viewport. */
