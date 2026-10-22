@@ -3,10 +3,32 @@
 #include "profile.h"
 #if GAME_SH2
 #if GAME_PORTAL_HUB
-#include "levels/hub/portal_hub.h"
-#define level_init portal_hub_init
-#define level_update portal_hub_update
-#define level_render_frame portal_hub_render_frame
+#include "level_manager.h"
+#include "gamestate.h"
+#include "gamestates/gamestate_logo.h"
+#define level_init gamestate_init
+#define level_update gamestate_update
+#define level_render_frame gamestate_render_frame
+#elif GAME_T_FIRE_1
+#include "levels/terrestrial/fire/t_fire_1.h"
+#define level_init t_fire1_init
+#define level_update t_fire1_update
+#define level_render_frame t_fire1_render_frame
+#elif GAME_T_WATER_1
+#include "levels/terrestrial/water/t_water_1.h"
+#define level_init t_water1_init
+#define level_update t_water1_update
+#define level_render_frame t_water1_render_frame
+#elif GAME_T_AIR_1
+#include "levels/terrestrial/air/t_air_1.h"
+#define level_init t_air1_init
+#define level_update t_air1_update
+#define level_render_frame t_air1_render_frame
+#elif GAME_T_EARTH_1
+#include "levels/terrestrial/earth_levels.h"
+#define level_init t_earth1_init
+#define level_update t_earth1_update
+#define level_render_frame t_earth1_render_frame
 #else
 #include "levels/test/test_wide.h"
 #define level_init test_wide_init
@@ -15,6 +37,34 @@
 #endif
 #include "player.h"
 #include "camera.h"
+#endif
+
+#if GAME_PORTAL_HUB
+void gamestate_changed(GAME_STATE state) {
+    while (MARS_SYS_COMM0) {}
+    MARS_SYS_COMM0=0x0C00 | state;
+    while (MARS_SYS_COMM0) {}
+}
+void gamestate_intro_lightning(void) {
+    while (MARS_SYS_COMM0) {}
+    MARS_SYS_COMM0=0x0E00;
+    while (MARS_SYS_COMM0) {}
+}
+void gamestate_menu_letter(void) {
+    while (MARS_SYS_COMM0) {}
+    MARS_SYS_COMM0=0x0D00;
+    while (MARS_SYS_COMM0) {}
+}
+void gamestate_logo_scream(void) {
+    while (MARS_SYS_COMM0) {}
+    MARS_SYS_COMM0=0x0B00;
+    while (MARS_SYS_COMM0) {}
+}
+void level_music_play(GameLevel level) {
+    while (MARS_SYS_COMM0) {}
+    MARS_SYS_COMM0=0x0A00 | level;
+    while (MARS_SYS_COMM0) {}
+}
 #endif
 
 int m_main(void) {
@@ -45,6 +95,9 @@ int m_main(void) {
         GdlRenderTiming timing;
         uint32_t sequence = gdl_render_frame(level_render_frame(), &timing);
         if (!sequence) continue;
+#if GAME_PORTAL_HUB
+        gamestate_frame_presented();
+#endif
         duration[1] = timing.master_draw;
         duration[2] = timing.slave_draw;
         duration[3] = timing.master_wait;

@@ -5,15 +5,426 @@ while retaining the MarsDev 32X ROM boot structure. The SH-2 master initializes
 the 32X in transparent 8-bit mode; Genesis-side rendering remains responsible
 for the game image.
 
-## Current default: Portal Hub on 32X
+## Game states: logo, intro, menu
+
+The normal `GAME=PORTAL_HUB` ROM now boots through `STATE_LOGO` → `STATE_INTRO` → `STATE_MENU`. The menu includes lightning, title reveal, eye cycling,
+intro music, Start Game and Options. Start opens the main menu; Left/Right select,
+and Start confirms. Options retains the source Back/unused second selection.
+Start Game enters `STATE_PLAY`/Portal Hub. `STATE_PAUSE` retains its source enum value but is not implemented yet. Standalone stage
+builds continue to boot directly into their selected stage for testing. Start
++A+C returns to the Hub during gameplay and does not replay the logo.
+
+State dispatch is `sh_src/inc/gamestate.h` and `sh_src/src/gamestate.c`;
+logo files retain `inc/gamestates/` and `src/gamestates/`. Original logo PNGs
+keep their source paths under `sh_src/res/`. Rendering uses only the 32X VDP:
+the original 96x32 SGDK logo at (114,80), horizontally centered on its 92 visible columns, blue cycling for 123 ticks, a 60-tick
+hold, red cycling for 100 ticks, another 60-tick hold, and the source's five-tick
+fade plus 25-tick black hold. The scream fires on the sixth red tick. Startup
+music stays silent during the logo, then starts with the intro. Logo input is unskippable as in source.
+
+The palette animation keeps the source's every-third-tick cadence and valid
+0..10 indices; the original initialized slots to 3..13 despite an 11-color
+array. This out-of-bounds read is corrected by clamping the initial phase at the dark endpoint.
+The blue sprite's pixels are retained throughout, changing only palette data,
+matching the source (the red PNG supplies its palette only).
+
+The original `md_src/res/sfx/chakan_scream2.wav` is converted at build time to
+signed 8-bit mono 14kHz PCM, padded to 256 bytes for the current XGM1 driver.
+The sample is stretched to play at 75% of its original speed, lowering its pitch.
+The 68000 registers it as sample 63 and plays it on PCM channel 0. This retains
+the established audio driver and fixed ROM mirror without introducing XGM2.
+The logo frame uses its own level-memory overlay, replaced by intro/menu and eventually Hub assets after
+the synchronous render barrier. A freestanding `memset` supports frame clearing.
+
+`STATE_INTRO` ports all five story scenes from the original assets. Scene 1
+includes palette lightning, six-frame Chakan animation behind the scrolling
+text, a 20-tick fade, and the original 5/16-pixel crawl. Scenes 2–4 show the
+illustrated story panels. Scene 5 scrolls the final text over the hourglass,
+cycling its three sand colors every eleven ticks. All crawls stop within the
+visible tilemap bounds. Blocking source fades and cleanup are counted as frame
+ticks: 2343, 522, 522, 522, and 1902 ticks for the five scenes.
+
+Start fades the intro to black for five ticks and holds for five more before
+entering the menu. A held Start is consumed across the transition. Intro and
+menu each start the original intro theme; the opening intro lightning uses its
+own PCM recording. Intro scratch data shares the existing level-memory overlay.
+The RGB opening background's four palette-header rows are removed, preserving
+its original PAL0 artwork and PAL2 lightning indices. Lightning pulses remain
+latched across simulation catch-up until `gamestate_frame_presented()` acknowledges
+a displayed frame, preventing one-tick flashes from disappearing at 30 fps.
+
+Validation: host tests reconstruct every plane and all six animation frames,
+exercise the complete state sequence and menu controls under UB sanitization,
+and verify skip fading and crawl bounds. PicoDrive completed the sequence
+(logo → intro at VBlank 393, intro → menu at 6210) and a separate Start-skip run
+reached the menu at VBlank 708. Opening crawl, story panels, hourglass and menu
+captures were inspected. Real-hardware confirmation remains pending.
+
+```sh
+python3 -m unittest discover -s sh_src/tools -p test_intro.py
+python3 -m unittest discover -s sh_src/tools -p test_logo.py
+python3 md_src/tools/check_audio.py --core /path/to/picodrive_libretro.so --intro --frames 7000 --min-render-fps 60
+```
+
+## Intro rendering at 60 presentations per second
+
+The intro uses a prepared-screen compositor (`GdlScreen`). `convert_intro.py`
+prepares full 320x224 background words, sparse four-pixel text patches, and six
+word-aligned rectangles containing Chakan already composed over the background.
+Story panels 2–4 have their text composed into the static screen. Scene loading
+copies only the current screen, text patches, row directory, and animation into
+the intro SDRAM overlay, with shared uploads and the scheduler's cache barrier.
+The combined cache is about 191 KiB and does not increase the maximum level
+overlay size. It is replaced when gameplay loads.
+
+Both SH-2s retain the equal 112-line split. The hot path copies cached scanlines,
+substitutes the current animation rectangle, then applies sparse text patches
+using whole-word masks. It rebuilds each backbuffer completely, avoiding stale
+pixels when scrolling, animating or changing scenes. Palette lightning and
+hourglass animation still work without modifying pixel buffers. The general
+renderer remains available for gameplay and as the host pixel reference.
+
+PicoDrive NTSC measurements in stable 120-VBlank windows:
+
+| Intro scene | Before: presentations | After: presentations |
+| --- | ---: | ---: |
+| Opening crawl / animated Chakan | 60 | 120 |
+| Story panel 2 | 60 | 120 |
+| Story panel 3 | 60 | 120 |
+| Story panel 4 | 60 | 120 |
+| Hourglass crawl | 60 | 120 |
+
+`check_audio.py --intro --min-render-fps 60` asserts the presentation rate in all
+five windows separately, while also checking full intro playback and audio.
+This measures rendered frames rather than simulation ticks. Scene asset loads
+occur during black transitions; the logo and menu still use their existing
+render paths. These results are from PicoDrive, with hardware verification
+still pending. Host tests compare prepared-screen pixels with the original
+tile/sprite renderer across text scrolling, every animation frame, all panels,
+and the two independent SH-2 row ranges.
+
+## Current default: Portal Hub with working entrances
 
 ```sh
 MARSDEV=/opt/toolchains/mars make GAME=PORTAL_HUB
 ```
 
-`make` now selects PORTAL_HUB by default. Output remains `Chakan.32x` and the
-existing VS Code Build/Run tasks use it. `GAME=TEST_WIDE` and `GAME=TEST_SMALL`
-remain selectable. Portal Hub code follows the original relative layout under
+`Chakan.32x` enters Portal Hub after the logo, intro, and Start Game selection. Press **Up** while overlapping an Earth,
+Fire, Water, or Air portal to enter its migrated first terrestrial stage. The
+Hub fades out over 20 simulation ticks; the destination loads its own player,
+collision, camera, graphics, fade-in, and music without resetting the console.
+The original debug spawns in each destination remain unchanged. Press
+**Start + A + C** together in any terrestrial stage to fade back to the Hub
+and restore its spawn and music. The chord is consumed before gameplay jump/roll
+handling and triggers once per press, including when held through loading.
+Stage-completion/progression and return entrances are not migrated.
+
+Entrance selection follows the source: collision door IDs 1/2/3/4 map to
+Air/Earth/Fire/Water, then visible sprite bounds provide a fallback. The current
+source map contains no ID 1 cells, so Air uses its actual sprite entrance. ID 5
+is the elemental gate and remains inactive. Interaction requires a fresh Up
+press; holding Up while approaching an entrance does not activate it. The input
+edge state is retained across loading to prevent held buttons acting as new presses.
+
+All five levels coexist in ROM. Their fully reloaded asset arrays use NOBITS
+linker overlays at the same SDRAM address; only the active level occupies RAM.
+Persistent state stays outside the overlay, and the linker still reserves both
+SH-2 stacks. Loaders run after the synchronous render barrier. Scene generations
+invalidate the master and slave caches before reusing asset addresses. Hub and
+all four songs fit below the fixed 512 KiB audio-mirror limit; the 68000 restarts
+the existing hardware-compatible XGM driver with the requested track.
+
+Validation: 20 SH-2 host tests and 7 Genesis tests pass. The transition regression
+uses actual Hub/game loaders and checks all door descriptors, sprite fallbacks,
+held-Up rejection, fade timing, destination input, music selection, and
+Start+A+C returns from all four stages. Incomplete chords do not trigger returns. PicoDrive
+checks entered each destination from a Hub save state through normal Up input,
+then ran 1200 VBlanks with continued rendering and nonzero audio. Round-trip
+checks return using Start+A+C and re-enter each portal to exercise overlay reuse.
+Captures were checked for each destination and the restored Hub. Real-hardware portal switching remains unverified.
+
+```sh
+python3 md_src/tools/check_audio.py --core /path/to/picodrive_libretro.so --portal-entry earth --return-hub --frames 1200
+# Repeat with fire, water, and air. Test-only placement edits a PicoDrive save state;
+# no debug teleport command or fixed player address is included in the ROM.
+```
+
+### Water renderer optimization
+
+A repeatable standalone 1200-VBlank PicoDrive run improved from 15.211 to
+21.316 rendered frames per 60 VBlanks (about 40%). Its one-second interval range
+improved from 11..19 to 20..27. This is still below 60 FPS; emulator refresh rate
+is not game rendering rate. The same controller harness is used, although
+render cadence affects which input edges the game samples.
+
+Water resource conversion now bakes opaque/high background priority into pixel
+bit 7, and foreground priority into compact-map bit 15. Pixel alignment moves
+background color and coverage together; output strips the tag. Foreground map
+lookups mask out the priority bit. Existing untagged formats remain supported.
+All source pixel colors, tile priorities, and scroll phases remain unchanged.
+The generic background aligner uses constant SH-2 shifts rather than variable
+shift helper calls. A measured 128/96 scanline split balances Water's heavier
+lower bands; other scenes retain 112/112. The split is published with each job.
+
+The slave's immutable frame snapshot lives in dedicated SDRAM rather than its
+4 KiB stack. Compiler stack-usage inspection and the existing linker stack
+reservation check cover the optimized build. All 20 SH-2 and 7 Genesis host tests
+pass, including pixel comparisons for both tagged and untagged priority,
+sub-tile offsets, transparent pixels, opaque-row shortcuts, and the 128-line
+render seam. All four portal round trips retain working audio and rendering.
+
+### Audio transitions
+
+Before reloading the XGM driver, the 68000 owns the Z80 bus and explicitly
+silences the sound chips: all four PSG volumes, all six FM key states and
+operator levels, the DAC (centered then disabled), timers/channel-3 special mode,
+and LFO. A Z80 driver reset alone does not reset those chip registers. Stage
+Select has no PSG part, so a stage's PSG noise could otherwise survive the
+return. Z80 reset remains deasserted during RAM upload, as required for Genesis
+bus access, then the existing driver reset/readiness handshake is used.
+
+The PicoDrive round-trip harness checks actual PSG attenuation registers after
+return: all four must equal 15 (silent), while Hub audio continues. Earth, Fire,
+Water, and Air round trips pass this check and re-entry playback. Real-hardware
+confirmation of the transition audio fix remains pending.
+
+### Central Hub camera
+
+The source's inclusive player-top-left region X=704..896, Y=500..800 locks
+camera Y at 580 while horizontal following stays active. Initial Hub entry and
+Start+A+C return set that height before the fade-in. Entering the region uses
+the source's shift-4 approach (1/16 of the remaining distance per tick, minimum
+1px); exiting eases back to ordinary vertical following. Arithmetic negative
+rounding matches SGDK. Other levels retain their existing camera behavior.
+Tests cover initial placement, inclusive boundary points, smooth exit/re-entry,
+settling at the lock height, and restoring the lock after a portal round trip.
+
+### Hub scenery
+
+The Hub foreground is synchronized with the current source branch. Its central
+emblem sits 16px below the older migrated artwork, aligning the original potion
+and hourglass coordinates without sprite-specific offsets.
+
+The four source potion strips animate at their original positions (685,665),
+(904,665), (685,702), and (904,694), using Chakan's palette bank and source
+foreground priority. Four hourglasses use the source positions (679,606),
+(898,606), (679,739), and (898,739). Source artwork remains under
+`sh_src/res/sprites/Items/`; these are scenery, without inventory/timer mechanics.
+
+Four planet images under `sh_src/res/sprites/Scenery/Hub/` scroll upward behind
+the foreground. A dedicated palette at indices 64..79 preserves the starfield
+and player palettes. Planets and items use immutable ROM spans to avoid growing
+the level RAM overlay. The sprite budget is 16, with one slot reserved for Chakan;
+scene fades include all 80 Hub colors.
+
+There are two horizontal instances of each planet across the full 1920x1280
+Hub. Base X/Y positions are (16,10), (260,330), (496,650), and (756,970),
+with a second instance of each type 1048px farther right. Neighboring sprite bounds have uniform 212px clear
+horizontal gaps, including beside the wider ringed planet. There is only one
+vertically wrapping planet per horizontal position. Each planet type
+has independent upward animation at 0.75/1/1.25/1.5px per simulation tick,
+all faster than the 0.5px starfield drift. Positions wrap from fully above
+the level's top to its bottom edge, using the 1280px world height plus the
+planet's height. Camera movement only changes the viewport and never triggers
+a wrap. Fractional motion survives skipped renders.
+
+## Terrestrial Fire 1 on 32X
+
+```sh
+MARSDEV=/opt/toolchains/mars make GAME=T_FIRE_1
+```
+
+Fire 1 is available through `GAME=T_FIRE_1`. Level code and collision RLE
+follow the source layout under `sh_src/src/levels/terrestrial/fire/`; original
+PNG and JASC palettes stay in `sh_src/res/levels/T_Fire/`. The original
+`05 - Fire Dimension 1.vgm` is played by the existing Genesis audio service.
+
+- Original 1600x1856 foreground, two independent source palettes, PNG tile
+  priority bits, and current source debug spawn (256,100) are preserved.
+  Chakan stays behind high-priority foreground tiles. The source has no
+  background map or animated scrolling; the renderer uses a black backdrop.
+- All 116 collision rows remain hexadecimal `"0xTTCC"` words, 100 cells per
+  row, with all eight source tile definitions. IDs 3..5 are explicitly
+  one-way 8h platforms (including left/right partial-width ends); IDs 2 and
+  6 are ordinary floor-only 8h profiles. ID 7 preserves the solid bottom seal.
+  Existing crouch, roll, jump, and drop-through gameplay is shared.
+- Asset reconstruction tests cover every source pixel and priority tile;
+  host checks cover camera bounds, backdrop, platform flags/heights, and
+  actual player drop-through. PicoDrive's 1200-frame run passed audio and
+  world-bound checks, measuring a steady 30 rendered frames per 60 VBlanks.
+  Real-hardware validation remains to be done.
+
+## Terrestrial Water 1 on 32X
+
+```sh
+MARSDEV=/opt/toolchains/mars make GAME=T_WATER_1
+```
+
+Water 1 is available through `GAME=T_WATER_1`. Its code and hexadecimal RLE
+follow `sh_src/src/levels/terrestrial/water/`; unchanged source PNGs stay in
+`sh_src/res/levels/T_Water/`. `09 - Water Dimension 1.vgm` stays under
+`md_src/res/music/`. Other levels remain available through `GAME=...` and
+explicit VS Code build tasks.
+
+- Original 6400x496 foreground, 512x496 background and spawn (8,250).
+  All 31 collision rows are copied unchanged as `"0xTTCC"` runs, 400 cells
+  per row. All 27 source tile definitions and their directional flags are
+  preserved, including the eight explicitly one-way profiles (IDs 8..11 and
+  15..18), the partial-width tile 13, and floor-only profiles.
+- The source's world-space raster bands are preserved, with animated drift tuned
+  19% slower than the source after two 10% tuning reductions: camera X/2 through
+  world Y=288; a per-scanline gradient from about 0.41 to 1.62 pixels/tick over Y=289..383;
+  and about 2.02 pixels/tick from Y=384 downward. Drift adds to camera parallax,
+  background Y follows camera Y, and X wraps across 512 pixels. The immutable
+  frame snapshot includes all 224 scanline offsets.
+- Priority decoding follows the source's enabled base priority on both planes.
+  SGDK `map.c` adds base tile attributes: adding priority 0x8000 flips the
+  resource priority bit on 16-bit overflow. Priority masks therefore invert
+  PNG bit 7 here. The renderer preserves high background over low foreground,
+  high foreground over background, and low-priority Chakan behind either high
+  plane. Color-zero pixels remain transparent to sprite priority.
+- Compact background rows and the large foreground/map remain in SDRAM.
+  Chakan's immutable span descriptors stay in ROM to make room; its pixels
+  and row directory remain in SDRAM. Supplemental crouch/roll frames also
+  remain in ROM. The linker still reserves both SH-2 stacks.
+- The source has no active Water 1 enemy/exit hooks in its processing loop;
+  this slice retains the shared player movement, crouch, roll and drop-through.
+
+Validation reconstructs both PNGs and both priority maps, checks all RLE rows,
+exercises 513 ticks of all raster-band boundaries, and checks the 27 collision
+flags plus a drop onto a solid floor. The actual C rasterizer is compared
+pixel-for-pixel for per-line scrolling, compact background data, both plane
+priorities and mixed sprite depths. PicoDrive captures at 120/300/600/1200
+show the original scene, and the 1,200-frame run has nonzero audio in both
+600-frame intervals. This level still needs rendering optimization and
+real-hardware confirmation. Current scripted throughput averages about 15
+rendered FPS. All 24 host tests pass.
+
+## Terrestrial Air 1 on 32X
+
+```sh
+MARSDEV=/opt/toolchains/mars make GAME=T_AIR_1
+```
+
+Select `GAME=T_AIR_1` to boot T_Air_1 in `Chakan.32x`. Its code and collision
+JSON follow `sh_src/src/levels/terrestrial/air/`; unchanged source images and
+JASC palettes live in `sh_src/res/levels/T_Air/`. The build uses only this
+checkout. `GAME=T_EARTH_1`, `GAME=PORTAL_HUB`, `GAME=TEST_WIDE` and
+`GAME=TEST_SMALL` remain available, with explicit VS Code build tasks.
+
+- Original 1920x1440 foreground, 256x224 background and spawn (464,64).
+  Both foreground palette banks are retained, with source priority-bit tiles
+  occluding Chakan. Character/background palettes occupy separate 32X banks.
+- All 90 collision RLE rows are copied unchanged as hexadecimal `"0xTTCC"`
+  strings. IDs 0/4 are empty; 1/3 are full solids; ID 2 is the source's 9h
+  heightmap with all four directional blocking flags. It cannot be dropped
+  through. Shared player crouch, rolling and collision support remain active.
+- The source's 28 visible tile-row scroll bands run independently of foreground
+  scrolling. Their base X follows camera movement at 1/8 speed. Rows 11..16
+  have no autonomous drift; the outer bands drift right at 0.25..2.75 px/tick
+  using 8.8 phases. Background Y stays zero. The complete row table is copied
+  with each immutable master/slave frame snapshot.
+- `11 - Air Dimension 1.vgm` is converted to XGM at build time and played by
+  the existing 68000/Z80 service with the hardware-confirmed ROM banking fix.
+- Air's additional priority mask and the terrain, background and original
+  Chakan movement frames fit in SDRAM. Action sprites remain in ROM. Data ends
+  at `0x06036680`, below the reserved stack boundary `0x0603E000`.
+- No enemies or level exit transitions are added; source Air 1 leaves its
+  entity/trigger hooks commented out.
+
+Validation includes pixel reconstruction against both original images, all
+priority bits, hexadecimal RLE dimensions, 513 ticks of autonomous band phases,
+solid 9h collision, renderer row scrolling and mixed sprite priority. The
+PicoDrive 1,200-frame run produces music in both 600-frame windows, progresses
+through the level and keeps player/camera in bounds. Captures at frames
+120/300/600/1200 were inspected. Rendering still needs optimization; the
+current Air scene averages about 28 rendered FPS in the scripted run and does
+not sustain 60 FPS. All 22 host tests pass. Real-hardware confirmation is pending.
+
+## Terrestrial Earth 1 on 32X
+
+```sh
+MARSDEV=/opt/toolchains/mars make GAME=T_EARTH_1
+```
+
+Select `GAME=T_EARTH_1` to output `Chakan.32x`. Gameplay and
+all visuals use the SH-2s and 32X VDP. The 68000/Z80 service plays the original
+`07 - Earth Dimension 1.vgm`, converted to XGM at build time, using the ROM
+mirror banking fix already confirmed on hardware for Portal Hub.
+
+- Source layout is preserved in `sh_src/src/levels/terrestrial/earth_levels.c`
+  and `sh_src/res/levels/T_Earth/`. The two PNGs are unchanged copies.
+- The actual foreground is 2576x864, and every original RLE row contains
+  161 cells. The source level metadata says 2560/160; this port uses the
+  actual art/RLE dimensions, preserving the extra rightmost column.
+- All 54 collision rows remain hexadecimal `"0xTTCC"` runs in
+  `t_earth1_collision.json`. Spawn remains (0,160) in sprite-origin space.
+- Tile 1 is solid on every side. Tiles 2/3 are floor-only 16h/8h geometry;
+  tiles 4..7 use the source's four 2w slope heightmaps. IDs 8/9 explicitly
+  carry `TILE_FLAG_ONE_WAY` and can be dropped through. All 54 RLE rows now
+  match `create_level_stages` (18 changed from master).
+- The source collision resolver, geometry/behavior descriptors and directional
+  flags now live under `src/level_collision/` and `inc/level_collision/`.
+  Earth, Hub and TEST_WIDE share it. The source's window allocator is replaced
+  by bounds-checked lookups into the resident grid; no SGDK allocator is needed.
+  Support-point floors, 4px step-up, 8px step-down, 6px ceiling nudging,
+  solid headroom tests and behavior reporting are retained. A swept floor
+  crossing check also catches fast falls through thin platforms. Collider
+  max edges passed to the resolver are inclusive. World sides/top clamp;
+  the port retains respawn below the map.
+- The original 256x224 background has independent scroll accumulators driven
+  by camera deltas: half speed horizontally, full speed vertically. Its own
+  offsets remain separate from foreground offsets. Player movement inside the
+  camera dead zone or beyond an edge clamp does not scroll the background;
+  fractional horizontal movement is retained when the camera moves. GDL now supports non-power-of-two background heights;
+  both rasterizer paths are tested across the repeat boundary.
+- Chakan retains movement, animation, jumping and camera tracking. The
+  level fades in over 20 ticks and respawns the player after falling below it.
+- No enemies or level-completion transitions are added: the source Earth 1
+  processing loop has those hooks commented out.
+
+Controls from `create_level_stages`:
+
+- Down while stationary and grounded crouches. Standing height is 58px
+  (source sprite offset 22); crouching/rolling height is 40px (offset 40).
+  Feet stay fixed when changing height. Low solid ceilings force crouching
+  until there is room to stand; explicitly one-way tiles are ignored by this test.
+- Down + A/B/C first tries a drop through the supporting one-way floor.
+  Mixed solid/one-way support rejects the drop. The 12-tick ignore window skips
+  only `TILE_FLAG_ONE_WAY` geometry, preserving solid floors underneath.
+- Otherwise, crouch/Down + A/B/C rolls in the facing direction at 8px/tick,
+  up to 137px. Releasing the jump buttons cancels the roll; holding them
+  cannot repeatedly trigger it. Disabling controls/simulation clears actions.
+- The unchanged 896x560 sprite sheet from this branch adds crouch and four
+  roll poses. Five supplemental action frames stay in ROM; the original
+  twelve frames remain in SDRAM. All three SH-2 levels bind both image sets.
+
+Validation: 20 host tests pass, including every foreground/background source
+pixel, collision row widths, actual C one-way/slope movement, and renderer
+wrapping. A 1,200-frame PicoDrive run produces music in both 600-frame intervals,
+with progressing SH-2 rendering and bounded camera/player positions. Captures
+at frames 120/300/600/1200 were inspected. Current measured render throughput
+averages about 48 FPS under the current scripted run; this level is not yet at 60 FPS.
+SH-2 data ends at `0x0603CA40`, below the reserved stack boundary `0x0603E000`.
+A separate 600-frame controller sequence crouches, rolls onto the starting
+one-way ledge, then drops through it; captured poses were visually inspected
+and audio stays nonzero. Earth 1 still needs confirmation on real hardware.
+
+Mode-switch checks also built and ran Portal Hub, TEST_WIDE and TEST_SMALL
+with nonzero audio. The SH-2 checks reached the original Hub/test rightmost
+camera bounds. The final ROM is restored to T_EARTH_1.
+
+Other selectable builds remain `GAME=PORTAL_HUB`, `GAME=TEST_WIDE`, and
+`GAME=TEST_SMALL`.
+
+## Portal Hub on 32X
+
+```sh
+MARSDEV=/opt/toolchains/mars make GAME=PORTAL_HUB
+```
+
+Select `GAME=PORTAL_HUB` to build the Hub. Output remains `Chakan.32x`.
+Portal Hub code follows the original relative layout under
 `sh_src/src/levels/hub/`; source art stays under `sh_src/res/levels/Hub/` and
 `sh_src/res/sprites/Scenery/Hub/`.
 
@@ -30,10 +441,10 @@ Implemented content:
   The source defines
   their non-solid `TILE_BEHAVIOR_DOOR` descriptors in
   `src/level_collision/collision_heightmaps.c`: Air=1, Earth=2, Fire=3,
-  Water=4, Elemental=5 (behavior IDs). The SH-2 port currently preserves the
-  map markers but still needs those behavior descriptors and overlap reporting
-  migrated. Destination transitions are a separate step; no wired player
-  door-transition handler was found in the source.
+  Water=4, Elemental=5 (behavior IDs). The SH-2 port now includes these
+  descriptors and overlap reporting. `collision_player_behavior()` exposes
+  type/ID/param; `player_collision_result` also exposes collision flags and
+  hit coordinates. Destination transitions are not yet implemented.
 - Original Chakan animations and collider, SH-2 movement, bounded two-axis camera
   (x=0..1600, y=0..1056), and respawn after falling out of the world.
 - Four portal sprites at original positions, nine flames with six-frame
@@ -186,7 +597,7 @@ including both facings, overlapping sprites, clipping, all camera byte alignment
 row splits and padded surfaces. All twelve checks pass (six MD/tools and six
 SH/tools). The extracted version sustained exactly 60 renders per measured
 60-VBlank interval after warmup in a 7200-frame PicoDrive run, with uninterrupted
-nonzero audio. Current default output remains the SH-2 `TEST_WIDE` ROM.
+nonzero audio. At that migration stage, the default output was the SH-2 `TEST_WIDE` ROM.
 
 ## Renderer optimization and timing
 
@@ -371,8 +782,17 @@ Stage Select music now starts automatically after level initialization.
   sample and the assembled driver.
 - `md_src/src/snd/sound.c` adapts the driver upload, sample table and music
   commands from SGDK's `xgm.c` / `z80_ctrl.c` without linking its full runtime.
-- The host translates its `0x880000` ROM-mirror addresses into cartridge offsets
-  for the Z80. This was verified with PicoDrive's 32X core.
+- The host passes `0x880000` ROM-mirror addresses to the Z80. Boot leaves RV
+  clear so the SH-2s can access ROM; the low cartridge window is unavailable
+  in that mode. Earlier builds incorrectly passed low cartridge offsets,
+  which played in PicoDrive but were reported silent on real hardware.
+  The XGM `setBank_BC` and `setBank_DE` macros now select the fixed
+  `0x880000..0x8FFFFF` mirror, including address bit 23, with their original
+  101/105-cycle timing preserved. A linker assertion keeps audio in that
+  512 KiB window. The bank-serialization test checks every 32 KiB bank in
+  the window and both cycle budgets. The rebuilt Portal Hub ROM passed
+  1,200 PicoDrive frames with nonzero audio in both 600-frame intervals;
+  confirmation on real hardware is still pending.
 - Driver upload occurs with reset released and the bus held. Reset is asserted
   after upload, then released to start the driver. Readiness polling is bounded;
   a failed driver leaves gameplay running with `sound_ready == false`.
@@ -476,3 +896,45 @@ version of the original scene running.
 Compiler-generated C header dependencies have now been added. A dedicated
 linker section for RAM code can replace the current code-in-`.data` convention
 and remove its warning.
+
+Menu title impacts are extracted by `md_src/tools/convert_menu_sound.py` and
+triggered by the same SH-2 update that reveals each letter. The original WAV's
+prerecorded title segment is muted, while lightning continues on a separate PCM
+channel. Skipping the reveal shows the title without triggering six impacts.
+
+## Hub progression
+
+`level_progress.c` stores 24 stage-completion bits in persistent RAM outside
+level overlays. `level_manager_init()` starts a new game and clears them; normal
+level changes/Hub reloads retain them. `level_manager_complete_current()` is the
+stage-exit API: it marks the current playable stage once and fades to Hub.
+The existing Start+A+C return chord abandons a stage without completing it.
+The source has no finished stage-exit triggers, so no completion shortcut or
+invented exit region was added. Progress is not saved across a reset.
+
+Hub entrances select the first incomplete terrestrial stage for each element.
+After all twelve terrestrial stages are complete, they select elemental stages.
+Completed groups hide their portal; all elemental stages unlock final-door
+routing. All 16 stage and 8 level-clear source markers are converted with PAL1
+and their original positions, combined into one sprite to preserve the existing
+sprite budget. They update immediately when flags change, including in Hub.
+
+Later stage/final IDs are represented for progression, but the runtime only
+loads the four implemented stage-1 levels. Requests for a placeholder stay in
+Hub without freezing control, loading empty maps or changing music. The next
+stage is not silently replaced with stage 1. The level registry/availability
+check can be extended as new content is implemented.
+
+Host tests cover all 24 stage bits, out-of-order/idempotent completion, realm
+unlocking, unavailable destinations, final doors, completion versus return,
+normal fade/reload persistence, marker count/bounds and new-game reset.
+
+PicoDrive smoke validation navigated Logo → Intro skip → Menu → Play. A test-only
+save-state update of completion bits confirmed the complete Hub marker display;
+no debug completion command was added to the ROM. All 24 markers are represented
+by 200 spans in the composite, leaving the player/scenery sprite budget intact.
+
+```sh
+python3 -m unittest discover -s sh_src/tools -p test_level_progress.py
+python3 -m unittest discover -s sh_src/tools -p test_portal_transitions.py
+```

@@ -1,4 +1,5 @@
 #include "gdl/renderer.h"
+#include "background.h"
 
 /* Both processors draw disjoint scanlines of the same hidden framebuffer. */
 void gdl_render_rows_direct(const GdlScene *scene, const GdlFrame *frame,
@@ -24,20 +25,26 @@ void gdl_render_rows_direct(const GdlScene *scene, const GdlFrame *frame,
         const uint16_t *bm = bg_map + (by >> 3) * bg_width;
         uint16_t offset = camera_x & 7;
         uint16_t tile_x = camera_x >> 3;
+        uint16_t scroll_x = frame->background_per_line ? frame->background_rows[y] :
+            frame->background_per_row ? frame->background_rows[y / 8] : frame->background_x;
+        uint16_t bg_x = (scroll_x - offset) & (bg_width * 8 - 1);
+        uint16_t bg_first = bg_x >> 3, bg_phase = bg_x & 7;
         uint16_t columns = (320 + offset + 7) >> 3;
         for (uint16_t column = 0; column < columns; column++, tile_x++) {
             const uint32_t *fg = fg_tiles + fm[tile_x] + (fy & 7) * 5;
-            const uint32_t *bg = bg_tiles + bm[tile_x & bg_x_mask] + (by & 7) * 2;
+            uint32_t bg_left=0, bg_right=0;
+            if (fg[4] != 1) background_pixels(bg_tiles, bm, bg_first+column,
+                bg_x_mask, (by & 7)*2, bg_phase, &bg_left, &bg_right);
             uint32_t *output = words + column * 2;
             if (fg[4] == 0) {
-                output[0] = bg[0];
-                output[1] = bg[1];
+                output[0] = bg_left;
+                output[1] = bg_right;
             } else if (fg[4] == 1) {
                 output[0] = fg[0];
                 output[1] = fg[1];
             } else {
-                output[0] = fg[0] | (bg[0] & fg[2]);
-                output[1] = fg[1] | (bg[1] & fg[3]);
+                output[0] = fg[0] | (bg_left & fg[2]);
+                output[1] = fg[1] | (bg_right & fg[3]);
             }
         }
         for (uint16_t si = 0; si < frame->sprite_count; si++) {

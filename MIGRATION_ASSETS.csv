@@ -1,0 +1,84 @@
+source_resource,symbols,source_code_references,port_locations,file_status
+intro/intro_1_bgb.png,ts_intro_1_bgb; map_intro_1_bgb,src/gamestates/gamestate_intro.c,sh_src/res/intro/intro_1_bgb.png,identical
+intro/intro_1_pal0.pal,pal0_intro_1,src/gamestates/gamestate_intro.c,sh_src/res/intro/intro_1_pal0.pal,identical
+intro/intro_1_pal2.pal,pal2_intro_1,,sh_src/res/intro/intro_1_pal2.pal,identical
+intro/intro_1_text_bga.png,ts_intro_1_bga; map_intro_1_bga,src/gamestates/gamestate_intro.c,sh_src/res/intro/intro_1_text_bga.png,identical
+intro/intro_2_bgb.png,ts_intro_2_bgb; map_intro_2_bgb,src/gamestates/gamestate_intro.c,sh_src/res/intro/intro_2_bgb.png,identical
+intro/intro_2_text_bga.png,pal_intro_2; ts_intro_2_bga; map_intro_2_bga,src/gamestates/gamestate_intro.c,sh_src/res/intro/intro_2_text_bga.png,identical
+intro/intro_3_bgb.png,ts_intro_3_bgb; map_intro_3_bgb,src/gamestates/gamestate_intro.c,sh_src/res/intro/intro_3_bgb.png,identical
+intro/intro_3_text_bga.png,pal_intro_3; ts_intro_3_bga; map_intro_3_bga,src/gamestates/gamestate_intro.c,sh_src/res/intro/intro_3_text_bga.png,identical
+intro/intro_4_bgb.png,ts_intro_4_bgb; map_intro_4_bgb,src/gamestates/gamestate_intro.c,sh_src/res/intro/intro_4_bgb.png,identical
+intro/intro_4_text_bga.png,pal_intro_4; ts_intro_4_bga; map_intro_4_bga,src/gamestates/gamestate_intro.c,sh_src/res/intro/intro_4_text_bga.png,identical
+intro/intro_5_bgb.png,pal_intro_5b; ts_intro_5_bgb; map_intro_5_bgb,src/gamestates/gamestate_intro.c,sh_src/res/intro/intro_5_bgb.png,identical
+intro/intro_5_text_bga.png,pal_intro_5a; ts_intro_5_bga; map_intro_5_bga,src/gamestates/gamestate_intro.c,sh_src/res/intro/intro_5_text_bga.png,identical
+intro/intro_sprite_indexed.png,intro_chakan,src/gamestates/gamestate_intro.c,sh_src/res/intro/intro_sprite_indexed.png,identical
+intro/intro_sprite_palette.pal,pal_intro_chakan,,sh_src/res/intro/intro_sprite_palette.pal,identical
+levels/Hub/fg_test_level.png,pal_test_level_floor; ts_test_level_floor; map_test_level_floor,src/levels/test/test_small.c,md_src/res/levels/Hub/fg_test_level.png,identical
+levels/Hub/fg_test_level_wide.png,pal_test_level_wide_floor; ts_test_level_wide_floor; map_test_level_wide_floor,src/levels/test/test_wide.c,sh_src/res/levels/Hub/fg_test_level_wide.png,identical
+levels/Hub/portal_hub_fg1.png,ts_portal_hub_floor; map_portal_hub_floor,src/levels/hub/portal_hub.c,sh_src/res/levels/Hub/portal_hub_fg1.png,identical
+levels/Hub/portal_starfield.png,pal_portal_starfield; ts_portal_starfield; map_portal_starfield,src/levels/hub/portal_hub.c; src/levels/test/test_small.c; src/levels/test/test_wide.c,sh_src/res/levels/Hub/portal_starfield.png; md_src/res/levels/Hub/portal_starfield.png,identical
+levels/Hub/portalhub_pal0.png,pal0_portal_hub_floor,src/levels/hub/portal_hub.c,sh_src/res/levels/Hub/portalhub_pal0.png,"palette entry 2 differs: source 0x08C, port 0x0AE"
+levels/Hub/portalhub_pal1.png,pal1_portal_hub_floor,src/levels/hub/portal_hub.c,sh_src/res/levels/Hub/portalhub_pal1.png,identical
+levels/T_Air/T_Air_1_bg_wide.png,pal_t_air1_bg; ts_t_air1_bg; map_t_air1_bg,src/levels/terrestrial/air/t_air_1.c,sh_src/res/levels/T_Air/T_Air_1_bg_wide.png,identical
+levels/T_Air/T_Air_1_fg.png,ts_t_air1_fg; map_t_air1_fg,src/levels/terrestrial/air/t_air_1.c,sh_src/res/levels/T_Air/T_Air_1_fg.png,identical
+levels/T_Air/pal_t_air1_fg_pal0.pal,pal0_t_air1_fg,src/levels/terrestrial/air/t_air_1.c,sh_src/res/levels/T_Air/pal_t_air1_fg_pal0.pal,identical
+levels/T_Air/pal_t_air1_fg_pal1.pal,pal1_t_air1_fg,src/levels/terrestrial/air/t_air_1.c,sh_src/res/levels/T_Air/pal_t_air1_fg_pal1.pal,identical
+levels/T_Earth/T_Earth_1_bg.png,pal_t_earth1_bg; ts_t_earth1_bg; map_t_earth1_bg,src/levels/terrestrial/earth/t_earth_1.c,sh_src/res/levels/T_Earth/T_Earth_1_bg.png,identical
+levels/T_Earth/T_Earth_1_fg.png,pal_t_earth1_fg; ts_t_earth1_fg; map_t_earth1_fg,src/levels/terrestrial/earth/t_earth_1.c,sh_src/res/levels/T_Earth/T_Earth_1_fg.png,identical
+levels/T_Fire/T_Fire_1_fg.png,ts_t_fire1_fg; map_t_fire1_fg,src/levels/terrestrial/fire/t_fire_1.c,sh_src/res/levels/T_Fire/T_Fire_1_fg.png,identical
+levels/T_Fire/pal0_t_fire1_fg.pal,pal0_t_fire1_fg,src/levels/terrestrial/fire/t_fire_1.c,sh_src/res/levels/T_Fire/pal0_t_fire1_fg.pal,identical
+levels/T_Fire/pal1_t_fire1_fg.pal,pal1_t_fire1_fg,src/levels/terrestrial/fire/t_fire_1.c,sh_src/res/levels/T_Fire/pal1_t_fire1_fg.pal,identical
+levels/T_Water/T_Water_1_bg_w_prio.png,pal_t_water1_bg; ts_t_water1_bg; map_t_water1_bg,src/levels/terrestrial/water/t_water_1.c,sh_src/res/levels/T_Water/T_Water_1_bg_w_prio.png,identical
+levels/T_Water/T_Water_1_fg_w_prio_new.png,pal_t_water1_fg; ts_t_water1_fg; map_t_water1_fg,src/levels/terrestrial/water/t_water_1.c,sh_src/res/levels/T_Water/T_Water_1_fg_w_prio_new.png,identical
+menus/main_menu_bgb.png,ts_menu_b; map_menu_b,src/gamestates/gamestate_menu.c,sh_src/res/menus/main_menu_bgb.png,identical
+menus/main_menu_lettering.png,ts_main_menu_text; map_main_menu_text,src/gamestates/gamestate_menu.c,sh_src/res/menus/main_menu_lettering.png,identical
+menus/main_menu_lightning_a.png,ts_menu_a1; map_menu_a1,src/gamestates/gamestate_menu.c,sh_src/res/menus/main_menu_lightning_a.png,identical
+menus/main_menu_lightning_b.png,ts_menu_a2; map_menu_a2,src/gamestates/gamestate_menu.c,sh_src/res/menus/main_menu_lightning_b.png,identical
+menus/main_menu_pal0.pal,pal0_menu_a,,sh_src/res/menus/main_menu_pal0.pal,identical
+menus/main_menu_pal1.pal,pal1_menu_b; pal2_menu_title,,,missing
+menus/main_menu_splash_lettering.png,ts_menu_splash; map_menu_splash,src/gamestates/gamestate_menu.c,sh_src/res/menus/main_menu_splash_lettering.png,identical
+menus/options_menu_lettering.png,ts_options_menu_text; map_options_menu_text,src/gamestates/gamestate_menu.c,sh_src/res/menus/options_menu_lettering.png,identical
+menus/pause_menu.bmp,window_pause_menu,src/gamestate.c,,missing: STATE_PAUSE
+menus/sgdk_retro_logo.png,sgdk_retro_logo; pal_logo_blue,src/gamestates/gamestate_logo.c,sh_src/res/sgdk_retro_logo.png,identical
+menus/sgdk_retro_logo_red.png,pal_logo_red,src/gamestates/gamestate_logo.c,sh_src/res/sgdk_retro_logo_red.png,identical
+music/01 - Intro Theme.vgm,music_intro,src/gamestates/gamestate_intro.c; src/gamestates/gamestate_menu.c,md_src/res/music/01 - Intro Theme.vgm,identical
+music/02 - Stage Select.vgm,music_stage_select,src/levels/hub/portal_hub.c; src/levels/test/test_small.c; src/levels/test/test_wide.c,md_src/res/music/02 - Stage Select.vgm,identical
+music/03 - Story Interlude.vgm,music_story_interlude,,,missing
+music/04 - Item Selection.vgm,music_item_selection,src/gamestate.c,,missing: pause music
+music/05 - Fire Dimension 1.vgm,music_fire_dimension_1,src/levels/terrestrial/fire/t_fire_1.c,md_src/res/music/05 - Fire Dimension 1.vgm,identical
+music/06 - Fire Dimension 2.vgm,music_fire_dimension_2,,,missing
+music/07 - Earth Dimension 1.vgm,music_earth_dimension_1,src/levels/terrestrial/earth/t_earth_1.c,md_src/res/music/07 - Earth Dimension 1.vgm,identical
+music/08 - Earth Dimension 2.vgm,music_earth_dimension_2,,,missing
+music/09 - Water Dimension 1.vgm,music_water_dimension_1,src/levels/terrestrial/water/t_water_1.c,md_src/res/music/09 - Water Dimension 1.vgm,identical
+music/10 - Water Dimension 2.vgm,music_water_dimension_2,,,missing
+music/11 - Air Dimension 1.vgm,music_air_dimension_1,src/levels/terrestrial/air/t_air_1.c,md_src/res/music/11 - Air Dimension 1.vgm,identical
+music/12 - Air Dimension 2.vgm,music_air_dimension_2,,,missing
+music/13 - Unknown Track 1.vgm,music_unknown_1,,,missing
+music/14 - Unknown Track 2.vgm,music_unknown_2,,,missing
+music/15 - Unknown Track 3.vgm,music_unknown_3,,,missing
+sfx/chakan_scream2.wav,chakan_scream,src/gamestates/gamestate_logo.c,md_src/res/sfx/chakan_scream2.wav,identical
+sfx/intro_lightning.wav,wav_intro_lightning,src/gamestates/gamestate_intro.c,md_src/res/sfx/intro_lightning.wav,identical
+sfx/menu_lightning.wav,wav_menu_lightning,src/gamestates/gamestate_menu.c,md_src/res/sfx/menu_lightning.wav,identical
+sprites/Chakan/chakan_anim_no_weapons.png,chakan; pal_chakan,src/levels/elemental/air/e_air_levels_common.c; src/levels/elemental/earth/e_earth_levels_common.c; src/levels/elemental/fire/e_fire_levels_common.c; src/levels/elemental/water/e_water_levels_common.c; src/levels/hub/portal_hub.c; src/levels/terrestrial/air/t_air_levels_common.c; src/levels/terrestrial/earth/t_earth_levels_common.c; src/levels/terrestrial/fire/t_fire_levels_common.c; src/levels/terrestrial/water/t_water_levels_common.c; src/levels/test/test_small.c; src/levels/test/test_wide.c; src/player.c,sh_src/res/sprites/Chakan/chakan_anim_no_weapons.png; md_src/res/sprites/Chakan/chakan_anim_no_weapons.png,decoded pixels and Genesis palette identical; PNG encoding differs
+sprites/Items/hourglass_full.png,hourglass,src/levels/hub/hub_sprites.c,sh_src/res/sprites/Items/hourglass_full.png,identical
+sprites/Items/potion_air.png,potion_air,src/levels/hub/hub_sprites.c,sh_src/res/sprites/Items/potion_air.png,identical
+sprites/Items/potion_earth.png,potion_earth,src/levels/hub/hub_sprites.c,sh_src/res/sprites/Items/potion_earth.png,identical
+sprites/Items/potion_fire.png,potion_fire,src/levels/hub/hub_sprites.c,sh_src/res/sprites/Items/potion_fire.png,identical
+sprites/Items/potion_water.png,potion_water,src/levels/hub/hub_sprites.c,sh_src/res/sprites/Items/potion_water.png,identical
+sprites/Menus/main_menu_arrow.png,menu_arrow,src/gamestates/gamestate_menu.c,sh_src/res/sprites/Menus/main_menu_arrow.png,identical
+sprites/Menus/main_menu_title_sprite_C.png,menu_title_C,src/gamestates/gamestate_menu.c,sh_src/res/sprites/Menus/main_menu_title_sprite_C.png,identical
+sprites/Menus/main_menu_title_sprite_a.png,pal_menu_title; menu_title_a,src/gamestates/gamestate_menu.c,sh_src/res/sprites/Menus/main_menu_title_sprite_a.png,identical
+sprites/Menus/main_menu_title_sprite_h.png,menu_title_h,src/gamestates/gamestate_menu.c,sh_src/res/sprites/Menus/main_menu_title_sprite_h.png,identical
+sprites/Menus/main_menu_title_sprite_k.png,menu_title_k,src/gamestates/gamestate_menu.c,sh_src/res/sprites/Menus/main_menu_title_sprite_k.png,identical
+sprites/Menus/main_menu_title_sprite_n.png,menu_title_n,src/gamestates/gamestate_menu.c,sh_src/res/sprites/Menus/main_menu_title_sprite_n.png,identical
+sprites/Scenery/Hub/Level_Complete_Ball.png,level_clear,src/levels/hub/hub_sprites.c,sh_src/res/sprites/Scenery/Hub/Level_Complete_Ball.png,identical; converted and rendered as conditional completion markers
+sprites/Scenery/Hub/Stage_Complete_Ball.png,stage_clear,src/levels/hub/hub_sprites.c,sh_src/res/sprites/Scenery/Hub/Stage_Complete_Ball.png,identical; converted and rendered as conditional completion markers
+sprites/Scenery/Hub/T_Air_Portal_single.png,air_portal,src/levels/hub/hub_sprites.c,sh_src/res/sprites/Scenery/Hub/T_Air_Portal_single.png,identical
+sprites/Scenery/Hub/T_Earth_Portal_single.png,pal_portals; earth_portal,src/levels/hub/hub_sprites.c,sh_src/res/sprites/Scenery/Hub/T_Earth_Portal_single.png,identical
+sprites/Scenery/Hub/T_Fire_Portal_single.png,fire_portal,src/levels/hub/hub_sprites.c,sh_src/res/sprites/Scenery/Hub/T_Fire_Portal_single.png,identical
+sprites/Scenery/Hub/T_Water_Portal_single.png,water_portal,src/levels/hub/hub_sprites.c,sh_src/res/sprites/Scenery/Hub/T_Water_Portal_single.png,identical
+sprites/Scenery/Hub/flame.png,portal_hub_flame,src/levels/hub/hub_sprites.c,sh_src/res/sprites/Scenery/Hub/flame.png,identical
+sprites/Scenery/Hub/green_planet.png,pal_planets; green_planet,src/levels/hub/planets.c,sh_src/res/sprites/Scenery/Hub/green_planet.png,identical
+sprites/Scenery/Hub/green_planets_small.png,green_planets_small,,sh_src/res/sprites/Scenery/Hub/green_planets_small.png,identical
+sprites/Scenery/Hub/planet_w_moons.png,planet_w_moons,,sh_src/res/sprites/Scenery/Hub/planet_w_moons.png,identical
+sprites/Scenery/Hub/ringed_planet.png,ringed_planet,src/levels/hub/planets.c,sh_src/res/sprites/Scenery/Hub/ringed_planet.png,identical

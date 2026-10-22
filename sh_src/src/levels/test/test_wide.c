@@ -1,5 +1,7 @@
 #include "test_wide.h"
 #include "player.h"
+#include "level_collision/collision.h"
+#include "level_collision/collision_heightmaps.h"
 #include "player_sprite.h"
 #include "input_controls.h"
 #include "camera.h"
@@ -14,18 +16,13 @@ static uint8_t sprite_pixels[sizeof(wide_sprite_pixels)];
 static uint16_t sprite_rows[sizeof(wide_sprite_rows) / 2];
 static uint16_t sprite_spans[sizeof(wide_sprite_spans) / 2];
 static uint8_t collision[sizeof(wide_collision)];
+static const GdlSpanImage actions = {wide_actions_rows, wide_actions_spans, wide_actions_pixels, 112, 80, 5};
 static const GdlSpanImage chakan_image = {sprite_rows, sprite_spans, sprite_pixels, 112, 80, 12};
 static const GdlScene render_scene = {
     {fg_tiles, fg_map, 180, 30, 0}, {bg_tiles, bg_map, 64, 32, 0}
 };
 
-static bool blocked(int16_t x, int16_t y) {
-    if (x < 0 || x + PLAYER_WIDTH > 1440 || y < 0) return true;
-    for (int16_t ty = y / 16; ty <= (y + PLAYER_HEIGHT - 1) / 16 && ty < 15; ty++)
-        for (int16_t tx = x / 16; tx <= (x + PLAYER_WIDTH - 1) / 16; tx++)
-            if (collision[ty * 90 + tx]) return true;
-    return false;
-}
+#define blocked collision_blocked
 
 void test_wide_init(void) {
     gdl_shared_upload(fg_tiles, wide_fg_tiles, sizeof(fg_tiles));
@@ -44,21 +41,29 @@ void test_wide_init(void) {
     gdl_scheduler_init(&render_scene);
     render_frame.sprite_count = 1;
     render_frame.sprites[0].image = &chakan_image;
+    collision_bind(collision, 90, 15, te1_collision_tiles, 2);
     playerInit(WIDE_SPAWN_X + PLAYER_OFFSET_X, WIDE_SPAWN_Y + PLAYER_OFFSET_Y, blocked);
+    player_set_collision_move(collision_move_player);
+    player_set_collision_queries(collision_can_drop, collision_can_stand);
     input_init();
     camera_init(1440, 240);
     star_drift = 0;
     player_sprite_init();
+    player_sprite_set_actions(&actions);
 }
 
 void test_wide_update(uint16_t pad) {
     processInput(pad);
     updatePlayer();
-    if (playerBody.y >= 240)
+    if (playerBody.y >= 240) {
         playerInit(WIDE_SPAWN_X + PLAYER_OFFSET_X, WIDE_SPAWN_Y + PLAYER_OFFSET_Y, blocked);
-    camera_step(playerBody.x + PLAYER_WIDTH / 2, playerBody.y + PLAYER_HEIGHT / 2);
+        player_set_collision_move(collision_move_player);
+        player_set_collision_queries(collision_can_drop, collision_can_stand);
+    }
+    camera_step(playerBody.x + PLAYER_WIDTH / 2, playerBody.y + playerBody.height / 2);
     star_drift = (star_drift + 1) & 511;
     render_frame.camera_x = cameraPosition.x;
+    render_frame.background_x = cameraPosition.x;
     render_frame.camera_y = cameraPosition.y;
     render_frame.background_y = (cameraPosition.y + (cameraPosition.y >> 3) + (star_drift >> 1)) & 255;
     render_frame.sprite_count = 0;

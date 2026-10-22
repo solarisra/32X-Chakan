@@ -54,6 +54,15 @@ class PortalHubTests(unittest.TestCase):
             ('T_Fire_Portal_single.png', 64, 88, 1, 16),
             ('T_Water_Portal_single.png', 64, 88, 1, 16),
             ('T_Air_Portal_single.png', 64, 88, 1, 16),
+            ('green_planet.png',32,32,1,64),
+            ('green_planets_small.png',24,24,1,64),
+            ('planet_w_moons.png',48,48,1,64),
+            ('ringed_planet.png',96,40,1,64),
+            ('../../Items/potion_earth.png',16,16,4,32),
+            ('../../Items/potion_fire.png',16,16,4,32),
+            ('../../Items/potion_water.png',16,16,4,32),
+            ('../../Items/potion_air.png',16,24,4,32),
+            ('../../Items/hourglass_full.png',24,32,1,32),
         ]:
             _, _, rows, _ = read_png(ROOT / 'res/sprites/Scenery/Hub' / filename)
             offsets, spans, pixels = pack_spans(rows, width, height, [(f * width, 0) for f in range(count)], base)

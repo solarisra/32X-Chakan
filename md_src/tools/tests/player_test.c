@@ -45,10 +45,10 @@ int main(void) {
     reset();
     frame(BUTTON_A);
     assert(playerBody.jumping && playerBody.fixY == -12 * 64);
-    assert(playerBody.y == 92);
+    assert(playerBody.y == 160 - PLAYER_HEIGHT - 12);
     land(BUTTON_A);
     for (int i = 0; i < 20; i++) frame(BUTTON_A);
-    assert(playerBody.onGround && playerBody.y == 104);
+    assert(playerBody.onGround && playerBody.y == 160 - PLAYER_HEIGHT);
     frame(0);
     frame(BUTTON_C);
     assert(playerBody.fixY < 0);
@@ -78,7 +78,7 @@ int main(void) {
 
     /* A jump pressed just before landing is consumed on the next frame. */
     reset();
-    playerBody.y = 100;
+    playerBody.y = 160 - PLAYER_HEIGHT - 4;
     playerBody.onGround = false;
     currentCoyoteTime = 0;
     playerBody.fixY = 4 * 64;

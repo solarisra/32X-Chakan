@@ -2,6 +2,22 @@
 #include "mars.h"
 
 static uint16_t pending_colors[256], current_colors[256], dirty_first = 256, dirty_end;
+static uint16_t fade_colors[80];
+
+void gdl_palette_begin_fade(void) {
+    for (uint16_t i=0;i<80;i++) fade_colors[i]=current_colors[i];
+}
+void gdl_palette_fade_to_black(uint16_t step,uint16_t duration) {
+    if (!duration || step>duration) return;
+    uint16_t colors[80], remaining=duration-step;
+    for (uint16_t i=0;i<80;i++) {
+        uint16_t c=fade_colors[i];
+        colors[i]=((c&31)*remaining/duration)
+            | ((((c>>5)&31)*remaining/duration)<<5)
+            | ((((c>>10)&31)*remaining/duration)<<10);
+    }
+    gdl_palette_schedule(0,colors,80);
+}
 
 void gdl_video_init(void) {
     dirty_first = 256;
@@ -11,6 +27,9 @@ void gdl_video_init(void) {
 }
 void gdl_palette_load(uint16_t first, const uint16_t *colors, uint16_t count) {
     if (first >= 256 || count > 256 - first || !colors) return;
+    /* PEN alone permits HBlank writes. CRAM access during active scanout can
+     * produce colored dots; commit the whole range during vertical blank. */
+    while (!(MARS_VDP_FBCTL & MARS_VDP_VBLK)) {}
     volatile uint16_t *palette = &MARS_CRAM;
     for (uint16_t i = 0; i < count; i++) {
         while (!(MARS_VDP_FBCTL & MARS_VDP_PEN)) {}

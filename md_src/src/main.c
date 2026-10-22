@@ -21,6 +21,7 @@ uint32_t timer = 0;
 volatile uint16_t sh2_rendered_frames = 0;
 volatile uint16_t sh2_camera_x = 0, sh2_player_x = 0;
 volatile uint16_t sh2_profile[10];
+volatile uint16_t sh2_level, sh2_gamestate;
 #if GAME_SH2
 static uint16_t raster_clock;
 static uint8_t raster_last;
@@ -64,6 +65,18 @@ void do_commands(void) {
 	case 3:
 		*mars_comm8 = read_joypad(cmd);
 		break;
+#if GAME_PORTAL_HUB
+    case 11: sound_logo_scream(); break;
+    case 13: sound_menu_letter(); break;
+    case 14: sound_intro_lightning(); break;
+    case 12: sh2_gamestate=cmd & 255;
+        if (sh2_gamestate==1) sound_play_level(5);
+        if (sh2_gamestate==2) { sound_play_level(5); sound_menu_lightning(); }
+        break;
+    case 10: /* Runtime level/music change, acknowledged after driver readiness. */
+        if (sound_play_level(cmd & 255)) sh2_level=cmd & 255;
+        break;
+#endif
 	case 9: /* SH-2 service-ready handshake. */
         break;
 	case 4:

@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 from indexed_png import read_png
+from gdl_assets import pack_spans
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -52,7 +53,7 @@ def generate():
         array('uint16_t', name + '_map', [tile * stride for tile in tilemap])
         colors.extend(palette)
     w, h, rows, palette = read_png(ROOT / 'res/sprites/Chakan/chakan_anim_no_weapons.png')
-    if (w, h) != (896, 400):
+    if (w, h) != (896, 560):
         raise ValueError('unexpected Chakan sheet dimensions')
     span_rows, spans, span_pixels = [0], [], []
     # Each row has a range of opaque runs. Store both facings to avoid runtime
@@ -87,6 +88,10 @@ def generate():
         r, g, b = (c >> 1) & 7, (c >> 5) & 7, (c >> 9) & 7
         rgb.append((r * 31 // 7) | ((g * 31 // 7) << 5) | ((b * 31 // 7) << 10))
     array('uint16_t', 'wide_palette', rgb)
+    _, _, action_rows, _ = read_png(ROOT / 'res/sprites/Chakan/chakan_anim_no_weapons.png')
+    actions = [(0, 400)] + [(f * 112, 480) for f in range(4)]
+    for suffix, values in zip(('rows', 'spans', 'pixels'), pack_spans(action_rows, 112, 80, actions, 32)):
+        array('uint8_t' if suffix == 'pixels' else 'uint16_t', 'wide_actions_' + suffix, values)
     collision = json.loads((ROOT / 'src/levels/test/test_wide_collision.json').read_text())
     if (collision['width'], collision['height'], collision['cell_size']) != (90, 15, 16):
         raise ValueError('unexpected collision dimensions')

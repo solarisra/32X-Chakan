@@ -11,8 +11,8 @@ SHBIN    = $(MARSDEV)/sh-elf/bin
 TARGET  ?= Chakan
 PYTHON ?= python3
 GAME ?= PORTAL_HUB
-ifeq ($(filter $(GAME),PORTAL_HUB TEST_WIDE TEST_SMALL),)
-$(error GAME must be PORTAL_HUB, TEST_WIDE or TEST_SMALL)
+ifeq ($(filter $(GAME),T_FIRE_1 T_WATER_1 T_AIR_1 T_EARTH_1 PORTAL_HUB TEST_WIDE TEST_SMALL),)
+$(error GAME must be T_FIRE_1, T_WATER_1, T_AIR_1, T_EARTH_1, PORTAL_HUB, TEST_WIDE or TEST_SMALL)
 endif
 # Update only on a backend change, before make reads compiler dependencies.
 CONFIGURE_GAME := $(shell $(PYTHON) sh_src/tools/configure_game.py $(GAME))
@@ -56,7 +56,7 @@ SHCCFLAGS  = -m2 -mb -Wall -Wextra -pedantic -std=c99 -ffreestanding
 SHCXXFLAGS = -m2 -mb -Wall -Wextra -pedantic -std=c++17 -ffreestanding
 
 # Assembler flags
-MDASFLAGS  = -x assembler-with-cpp -Imd_src/inc -m68000 -Wa,--register-prefix-optional
+MDASFLAGS  = -x assembler-with-cpp -Imd_src/inc -Ibuild -m68000 -Wa,--register-prefix-optional
 SHASFLAGS  = -Ish_src --small
 
 # Linker flags
@@ -106,7 +106,22 @@ md_src/res/music_stage_select.bin: md_src/res/music/02\ -\ Stage\ Select.vgm
 md_src/res/drv_xgm.bin: md_src/src/snd/drv_xgm.s80 md_src/inc/snd/z80_def.i80 md_src/inc/snd/z80_mac.i80 md_src/inc/snd/z80_fct.i80
 	$(MDBIN)/sjasm -imd_src/inc/snd $< $@ md_src/res/drv_xgm.lst
 
-md_src/res/music.o: md_src/res/music_stage_select.bin md_src/res/drv_xgm.bin
+md_src/res/music_earth_dimension_1.bin: md_src/res/music/07\ -\ Earth\ Dimension\ 1.vgm
+	$(MDBIN)/xgmtool "$<" $@ -s -n
+
+md_src/res/music_air_dimension_1.bin: md_src/res/music/11\ -\ Air\ Dimension\ 1.vgm
+	$(MDBIN)/xgmtool "$<" $@ -s -n
+
+md_src/res/music_water_dimension_1.bin: md_src/res/music/09\ -\ Water\ Dimension\ 1.vgm
+	$(MDBIN)/xgmtool "$<" $@ -s -n
+
+md_src/res/music_fire_dimension_1.bin: md_src/res/music/05\ -\ Fire\ Dimension\ 1.vgm
+	$(MDBIN)/xgmtool "$<" $@ -s -n
+
+md_src/res/logo_scream.bin: md_src/tools/convert_logo_sound.py md_src/res/sfx/chakan_scream2.wav
+	$(PYTHON) md_src/tools/convert_logo_sound.py
+
+md_src/res/music.o: md_src/res/logo_scream.bin md_src/res/music_fire_dimension_1.bin md_src/res/music_water_dimension_1.bin md_src/res/music_air_dimension_1.bin md_src/res/music_stage_select.bin md_src/res/music_earth_dimension_1.bin md_src/res/drv_xgm.bin build/game_config.h
 
 
 release: MDEXTRA  = -O2 -fomit-frame-pointer -flto -fuse-linker-plugin
@@ -131,8 +146,8 @@ $(MDTARGET).bin: $(MDTARGET).elf
 	@echo "Stripping ELF header from M68K program"
 	@$(MDOBJC) -O binary $< $@
 
-$(MDTARGET).elf: $(MDOBJS)
-	$(MDCC) $(MDLDFLAGS) $^ -o $@ $(MDLIBS)
+$(MDTARGET).elf: $(MDOBJS) md_src/md.ld
+	$(MDCC) $(MDLDFLAGS) $(MDOBJS) -o $@ $(MDLIBS)
 
 md_src/%.o: md_src/%.s
 	@echo "MDAS $<"
@@ -148,16 +163,16 @@ md_src/%.o: md_src/%.cpp
 
 # sh2 stuff
 
-sh_src/res/test_wide_data.h: sh_src/tools/convert_test_wide.py sh_src/tools/indexed_png.py sh_src/res/levels/Hub/fg_test_level_wide.png sh_src/res/levels/Hub/portal_starfield.png sh_src/res/sprites/Chakan/chakan_anim_no_weapons.png sh_src/src/levels/test/test_wide_collision.json
+sh_src/res/test_wide_data.h: sh_src/tools/convert_test_wide.py sh_src/tools/gdl_assets.py sh_src/tools/indexed_png.py sh_src/res/levels/Hub/fg_test_level_wide.png sh_src/res/levels/Hub/portal_starfield.png sh_src/res/sprites/Chakan/chakan_anim_no_weapons.png sh_src/src/levels/test/test_wide_collision.json
 	$(PYTHON) sh_src/tools/convert_test_wide.py
 
 sh_src/src/levels/test/test_wide.o: sh_src/res/test_wide_data.h
 
 
-sh_src/res/portal_hub_data.h: sh_src/tools/convert_portal_hub.py sh_src/tools/gdl_assets.py sh_src/tools/indexed_png.py $(wildcard sh_src/res/levels/Hub/portal*.png) $(wildcard sh_src/res/sprites/Scenery/Hub/*.png) sh_src/res/sprites/Chakan/chakan_anim_no_weapons.png sh_src/src/levels/hub/portal_hub_collision.json
+sh_src/res/portal_hub_data.h: sh_src/tools/convert_portal_hub.py sh_src/tools/gdl_assets.py sh_src/tools/indexed_png.py $(wildcard sh_src/res/levels/Hub/portal*.png) $(wildcard sh_src/res/sprites/Scenery/Hub/*.png) $(wildcard sh_src/res/sprites/Items/*.png) sh_src/res/sprites/Chakan/chakan_anim_no_weapons.png sh_src/src/levels/hub/portal_hub_collision.json
 	$(PYTHON) sh_src/tools/convert_portal_hub.py
 
-sh_src/src/levels/hub/portal_hub.o sh_src/src/levels/hub/hub_sprites.o: sh_src/res/portal_hub_data.h
+sh_src/src/levels/hub/portal_hub.o sh_src/src/levels/hub/hub_sprites.o sh_src/src/levels/hub/planets.o: sh_src/res/portal_hub_data.h
 
 md_src/src/main.o sh_src/m_main.o sh_src/s_main.o: build/game_config.h
 
@@ -190,8 +205,58 @@ sh_src/%.o: sh_src/%.cpp
 
 clean:
 	rm -f $(MDOBJS) $(SHOBJS) $(MDCS:.c=.d) $(SHCS:.c=.d)
-	rm -f md_src/res/test_small_data.h md_src/res/sprites.h sh_src/res/test_wide_data.h sh_src/res/portal_hub_data.h
-	rm -f md_src/res/music_stage_select.bin md_src/res/drv_xgm.bin md_src/res/drv_xgm.lst
+	rm -f sh_src/res/intro_data.h md_src/res/intro_lightning.bin md_src/res/menu_letter.bin md_src/res/menu_lightning.bin sh_src/res/menu_data.h md_src/res/music_intro.bin sh_src/res/logo_data.h md_src/res/logo_scream.bin md_src/res/test_small_data.h md_src/res/sprites.h sh_src/res/test_wide_data.h sh_src/res/portal_hub_data.h sh_src/res/t_earth1_data.h sh_src/res/t_air1_data.h sh_src/res/t_water1_data.h sh_src/res/t_fire1_data.h
+	rm -f md_src/res/music_fire_dimension_1.bin md_src/res/music_water_dimension_1.bin md_src/res/music_air_dimension_1.bin md_src/res/music_stage_select.bin md_src/res/music_earth_dimension_1.bin md_src/res/drv_xgm.bin md_src/res/drv_xgm.lst
 	rm -f $(MDTARGET).bin $(MDTARGET).elf $(MDTARGET).lst
 	rm -f $(TARGET).32x $(TARGET).elf $(TARGET).lst
 	rm -f m68k_crt0.bin.o m68k_crt0.bin
+
+sh_src/res/t_earth1_data.h: sh_src/tools/convert_t_earth1.py sh_src/tools/gdl_assets.py sh_src/tools/indexed_png.py $(wildcard sh_src/res/levels/T_Earth/*.png) sh_src/res/sprites/Chakan/chakan_anim_no_weapons.png sh_src/src/levels/terrestrial/t_earth1_collision.json
+	$(PYTHON) sh_src/tools/convert_t_earth1.py
+
+sh_src/src/levels/terrestrial/earth_levels.o: sh_src/res/t_earth1_data.h
+
+sh_src/res/t_air1_data.h: sh_src/tools/convert_t_air1.py sh_src/tools/gdl_assets.py sh_src/tools/indexed_png.py $(wildcard sh_src/res/levels/T_Air/*) sh_src/res/sprites/Chakan/chakan_anim_no_weapons.png sh_src/src/levels/terrestrial/air/t_air1_collision.json
+	$(PYTHON) sh_src/tools/convert_t_air1.py
+
+sh_src/src/levels/terrestrial/air/t_air_1.o: sh_src/res/t_air1_data.h
+
+sh_src/res/t_water1_data.h: sh_src/tools/convert_t_water1.py sh_src/tools/gdl_assets.py sh_src/tools/indexed_png.py $(wildcard sh_src/res/levels/T_Water/*.png) sh_src/res/sprites/Chakan/chakan_anim_no_weapons.png sh_src/src/levels/terrestrial/water/t_water1_collision.json
+	$(PYTHON) sh_src/tools/convert_t_water1.py
+
+sh_src/src/levels/terrestrial/water/t_water_1.o: sh_src/res/t_water1_data.h
+
+sh_src/res/t_fire1_data.h: sh_src/tools/convert_t_fire1.py sh_src/tools/gdl_assets.py sh_src/tools/indexed_png.py $(wildcard sh_src/res/levels/T_Fire/*) sh_src/res/sprites/Chakan/chakan_anim_no_weapons.png sh_src/src/levels/terrestrial/fire/t_fire1_collision.json
+	$(PYTHON) sh_src/tools/convert_t_fire1.py
+
+sh_src/src/levels/terrestrial/fire/t_fire_1.o: sh_src/res/t_fire1_data.h
+
+sh_src/res/logo_data.h: sh_src/tools/convert_logo.py sh_src/tools/gdl_assets.py sh_src/tools/indexed_png.py sh_src/res/sgdk_retro_logo.png sh_src/res/sgdk_retro_logo_red.png
+	$(PYTHON) sh_src/tools/convert_logo.py
+
+sh_src/src/gamestates/gamestate_logo.o: sh_src/res/logo_data.h
+
+sh_src/res/menu_data.h: sh_src/tools/convert_menu.py sh_src/tools/gdl_assets.py sh_src/tools/indexed_png.py $(wildcard sh_src/res/menus/*) $(wildcard sh_src/res/sprites/Menus/*)
+	$(PYTHON) sh_src/tools/convert_menu.py
+
+sh_src/src/gamestates/gamestate_menu.o: sh_src/res/menu_data.h
+
+md_src/res/music_intro.bin: md_src/res/music/01\ -\ Intro\ Theme.vgm
+	$(MDBIN)/xgmtool "$<" $@ -s -n
+
+md_src/res/music.o: md_src/res/music_intro.bin
+
+md_src/res/menu_lightning.bin md_src/res/menu_letter.bin &: md_src/tools/convert_menu_sound.py md_src/tools/convert_logo_sound.py md_src/res/sfx/menu_lightning.wav
+	$(PYTHON) md_src/tools/convert_menu_sound.py
+
+md_src/res/music.o: md_src/res/menu_lightning.bin md_src/res/menu_letter.bin
+
+sh_src/res/intro_data.h: sh_src/tools/convert_intro.py sh_src/tools/gdl_assets.py sh_src/tools/indexed_png.py $(wildcard sh_src/res/intro/*)
+	$(PYTHON) sh_src/tools/convert_intro.py
+
+sh_src/src/gamestates/gamestate_intro.o: sh_src/res/intro_data.h
+
+md_src/res/intro_lightning.bin: md_src/tools/convert_logo_sound.py md_src/res/sfx/intro_lightning.wav
+	$(PYTHON) -c "import sys; from pathlib import Path; sys.path.insert(0,'md_src/tools'); from convert_logo_sound import generate; Path('$@').write_bytes(generate(Path('md_src/res/sfx/intro_lightning.wav'),4))"
+
+md_src/res/music.o: md_src/res/intro_lightning.bin

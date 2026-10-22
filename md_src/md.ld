@@ -31,4 +31,6 @@ SECTIONS {
 		__bss_end = ALIGN(2);
 	} > ram
 	__bss_size = SIZEOF(.bss);
+	/* XGM banking uses the fixed 512 KiB 32X ROM mirror, not banked ROM. */
+	ASSERT(audio_rom_end <= 0x00900000, "Audio exceeds the fixed 32X ROM mirror")
 }

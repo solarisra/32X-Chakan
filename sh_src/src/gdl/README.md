@@ -60,9 +60,9 @@ not implemented.
 
 - Fixed 320x224 indexed 8-bit viewport. Pure rasterizer destinations may have a
   padded pitch; the 32X backend uses 80 uint32_t words per row.
-- One finite foreground and one repeating opaque background; both share camera
-  X. Background Y is independent. Background tile dimensions must be powers of
-  two. The application clamps foreground camera bounds before submission.
+- One finite foreground and one repeating opaque background; background X/Y offsets are independent. Background width in tiles must be a power of
+  two; height may be any positive tile count (Earth 1 uses 28). The application
+  clamps foreground camera bounds before submission.
 - Up to eight span sprites, submitted in back-to-front order. Each image defines
   its width, height, frame count and both facings. Clipping occurs before copying
   opaque pixels. All indices are final palette indices; the renderer imposes no
@@ -117,3 +117,50 @@ at the next completed flip. It preserves gaps between queued ranges from the
 backend's palette shadow. `gdl_palette_load` is a blocking initial load and
 waits for palette access. Resource packing now also supports deduplicating
 identical opaque runs without changing the span decoder.
+
+T_Air_1 uses `GdlFrame.background_rows[28]` with `background_per_row` enabled
+for independent X offsets per visible 8px band. The entire table is copied
+with the frame snapshot before either SH-2 draws. Background Y stays separate.
+An optional LSB-first `foreground_priority` map bitset lets sprites with
+`behind_foreground=2` pass behind priority tiles only; value 1 retains full
+foreground occlusion and value 0 keeps sprites above terrain. Priority maps
+must remain immutable for the active frame.
+
+Water 1 uses `background_per_line` and all 224 `background_rows` entries for
+world-height-based raster drift. An optional `background_priority` map enables
+two-plane composition in `renderer_planes.c`; high background pixels can cover
+low foreground and low-priority sprites. Transparent palette-bank color zero
+does not occlude sprites. Bands containing only low-priority background tiles
+use the existing compositor. Compact background `tile_rows` directories index
+unique two-word rows and keep the larger background within SDRAM limits.
+
+`background_opaque_rows` optionally marks source pixel rows guaranteed to be
+both high-priority and opaque across their full width. Those rows use a small
+compositor that skips hidden low-priority sprites and low foreground. Source
+conversion verifies the guarantee; mixed/transparent rows retain the general
+priority compositor. The priority compositor uses the SGDK-derived 16-color
+bank convention, where a palette bank's color zero does not occlude sprites.
+
+
+Level changes bind scenes only while `gdl_render_frame` is idle. Fully uploaded
+arrays marked `GDL_LEVEL_ASSETS(level)` share NOBITS linker overlays in SDRAM;
+never retain active references to a prior level's assets after loading another.
+The overlay is cleared at boot and must be fully replaced by each level loader.
+`gdl_scheduler_init` invalidates the master cache and publishes a new scene
+generation; the slave invalidates its cache before drawing that generation.
+Persistent player, level, and frame state remain outside the overlaid sections.
+
+
+The current frame budget is 16 visible sprites. Hub submission reserves its
+last slot for Chakan and clips scenery before consuming slots. Portal transition
+fades capture the first 80 colors, including the separate 16-color planet bank.
+
+
+Water's optional `background_pixel_priority` format stores opaque/high coverage
+in background pixel bit 7 (colors 0..127). Its `foreground_map_priority` format
+stores priority in compact foreground map bit 15 (directory indices 0..32767).
+The bitsets remain available for band dispatch and legacy priority paths.
+Both flags require resources converted for that encoding; ordinary resources
+leave them false. The background aligner uses fixed shifts for SH-2.
+Water jobs publish a 128/96 row split; other jobs retain 112/112. The slave frame
+snapshot uses dedicated SDRAM to keep nested scanline buffers within its stack.

@@ -7,8 +7,9 @@ typedef struct {
 /* Upload to caller-owned SDRAM through its uncached alias before binding.
  * Sources can be ROM or SDRAM. Assets must remain immutable while bound. */
 void gdl_shared_upload(void *destination, const void *source, uint32_t bytes);
-/* Initialize once on master before its first submission. Assets remain owned by
- * the application and must outlive the scheduler. Slave can wait before init. */
+/* Bind on master before submission, with the previous render complete. Rebinding
+ * invalidates both CPUs' asset caches. Assets stay immutable until the next bind.
+ * Slave can wait before the first init. */
 bool gdl_scheduler_init(const GdlScene *scene);
 /* Synchronous on master: snapshot, parallel draw, completion barrier, then flip.
  * Returns completed sequence, or zero for invalid input (no swap). */

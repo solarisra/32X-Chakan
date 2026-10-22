@@ -80,9 +80,21 @@ SECTIONS {
 	} > ram
 	_sdata = SIZEOF (.data);
 
-	.bss 0x06000000 + SIZEOF(.data) :
-	{
-		__bss_start = . ;
+	/* Only the active level occupies SDRAM. All members are NOBITS and
+	 * completely uploaded at load time; persistent state stays in .bss. */
+	__bss_start = 0x06000000 + SIZEOF(.data);
+	OVERLAY 0x06000000 + SIZEOF(.data) : {
+		.level_intro { *(.bss.level_intro) }
+		.level_menu { *(.bss.level_menu) }
+		.level_logo { *(.bss.level_logo) }
+		.level_hub { *(.bss.level_hub) }
+		.level_earth { *(.bss.level_earth) }
+		.level_fire { *(.bss.level_fire) }
+		.level_water { *(.bss.level_water) }
+		.level_air { *(.bss.level_air) }
+	} > ram
+
+	.bss : {
 		*(.shbss)
 		*(.bss .bss.*)
 		*(COMMON)

@@ -1,10 +1,11 @@
 #include "gdl/gdl.h"
 #include "profile.h"
 #include <stddef.h>
+#include "mars.h"
 
 typedef struct {
-    uint32_t request, completed;
-    uint16_t slave_ticks;
+    uint32_t request, completed, scene_generation;
+    uint16_t slave_ticks, split_y;
     GdlScene scene;
     GdlFrame frame;
 } GdlShared;
@@ -26,6 +27,10 @@ bool gdl_scheduler_init(const GdlScene *scene) {
         sequence = 0;
     }
     initialized = true;
+    /* Asset uploads bypass cache. Reused level addresses must not retain the
+     * previous scene's cached pixels on either processor. */
+    SHARED->scene_generation++;
+    CacheControl(0x11);
     return true;
 }
 uint32_t gdl_render_frame(const GdlFrame *frame, GdlRenderTiming *timing) {
@@ -33,10 +38,14 @@ uint32_t gdl_render_frame(const GdlFrame *frame, GdlRenderTiming *timing) {
     if (!initialized || !timing || !gdl_frame_valid(scene, frame)) return 0;
     uint32_t bytes = offsetof(GdlFrame, sprites) + frame->sprite_count * sizeof(GdlSprite);
     gdl_shared_upload((void *)&storage.frame, frame, bytes);
+    /* Priority composition costs more in Water's lower bands. Its measured
+     * 128/96 split reduces slave wait; ordinary scenes retain equal halves. */
+    uint16_t boundary=frame->background_priority?128:GDL_HEIGHT/2;
+    SHARED->split_y=boundary;
     SHARED->request = ++sequence;
     GdlSurface surface = gdl_video_backbuffer();
     uint16_t stamp = profile_timer_read();
-    gdl_render_rows(scene, frame, &surface, 0, GDL_HEIGHT / 2);
+    gdl_render_rows(scene, frame, &surface, 0, boundary);
     timing->master_draw = profile_timer_read() - stamp;
     stamp = profile_timer_read();
     while (SHARED->completed != sequence) {}
@@ -48,19 +57,26 @@ uint32_t gdl_render_frame(const GdlFrame *frame, GdlRenderTiming *timing) {
     return sequence;
 }
 void gdl_slave_loop(void) {
+    /* Keep the immutable job snapshot off the 4 KiB slave stack. Priority
+     * composition has nested scanline scratch buffers and band descriptors. */
+    static GdlFrame snapshot;
     uint32_t previous = 0;
+    uint32_t generation = 0;
     for (;;) {
         uint32_t request = SHARED->request;
         if (request != previous) {
+            if (generation != SHARED->scene_generation) {
+                CacheControl(0x11);
+                generation = SHARED->scene_generation;
+            }
             uint16_t stamp = profile_timer_read();
-            GdlFrame snapshot;
             uint32_t bytes = offsetof(GdlFrame, sprites) + SHARED->frame.sprite_count * sizeof(GdlSprite);
             const volatile uint8_t *source = (const volatile uint8_t *)&SHARED->frame;
             uint8_t *out = (uint8_t *)&snapshot;
             for (uint32_t i = 0; i < bytes; i++) out[i] = source[i];
             GdlSurface surface = gdl_video_backbuffer();
             gdl_render_rows((const GdlScene *)&SHARED->scene, &snapshot,
-                            &surface, GDL_HEIGHT / 2, GDL_HEIGHT);
+                            &surface, SHARED->split_y, GDL_HEIGHT);
             SHARED->slave_ticks = profile_timer_read() - stamp;
             SHARED->completed = request;
             previous = request;

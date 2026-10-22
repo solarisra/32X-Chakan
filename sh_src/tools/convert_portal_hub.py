@@ -42,6 +42,10 @@ def generate():
         ('fire', 'T_Fire_Portal_single.png', 64, 88, 1, 16),
         ('water', 'T_Water_Portal_single.png', 64, 88, 1, 16),
         ('air', 'T_Air_Portal_single.png', 64, 88, 1, 16),
+        ('green_planet', 'green_planet.png', 32, 32, 1, 64),
+        ('small_planets', 'green_planets_small.png', 24, 24, 1, 64),
+        ('planet_moons', 'planet_w_moons.png', 48, 48, 1, 64),
+        ('ringed_planet', 'ringed_planet.png', 96, 40, 1, 64),
     ]:
         w, h, rows, _ = read_png(ROOT / 'res/sprites/Scenery/Hub' / filename)
         if (w, h) != (width * frames, height):
@@ -49,13 +53,42 @@ def generate():
         data = pack_spans(rows, width, height, [(f * width, 0) for f in range(frames)], base)
         for suffix, values in zip(('rows', 'spans', 'pixels'), data):
             array('uint8_t' if suffix == 'pixels' else 'uint16_t', 'hub_' + name + '_' + suffix, values)
-    colors = native_palette(palette + character_colors + star_colors)
-    for i in (0, 16, 32, 48): colors[i] = 0
+    for name, height in [('earth',16),('fire',16),('water',16),('air',24),('hourglass',32)]:
+        filename='hourglass_full.png' if name=='hourglass' else f'potion_{name}.png'
+        width=24 if name=='hourglass' else 16
+        frames=1 if name=='hourglass' else 4
+        w,h,rows,_=read_png(ROOT/'res/sprites/Items'/filename)
+        if (w,h)!=(width*frames,height):
+            raise ValueError(f'unexpected sprite dimensions: {filename}')
+        for suffix,values in zip(('rows','spans','pixels'),
+                                 pack_spans(rows,width,height,[(f*width,0) for f in range(frames)],32)):
+            array('uint8_t' if suffix=='pixels' else 'uint16_t', 'hub_item_'+name+'_'+suffix,values)
+    marker_pixels=[]
+    marker_spans_required=0
+    for name,size in [('stage',8),('level',16)]:
+        filename='Stage_Complete_Ball.png' if name=='stage' else 'Level_Complete_Ball.png'
+        w,h,rows,_=read_png(ROOT/'res/sprites/Scenery/Hub'/filename)
+        if (w,h)!=(size,size): raise ValueError('unexpected completion marker size')
+        offsets,spans,pixels=pack_spans(rows,size,size,[(0,0)],16)
+        marker_spans_required+=offsets[size*2]*(16 if name=='stage' else 8)
+        for i in range(2,len(spans),3): spans[i]+=len(marker_pixels)
+        array('uint16_t','hub_marker_'+name+'_rows',offsets)
+        array('uint16_t','hub_marker_'+name+'_spans',spans)
+        marker_pixels.extend(pixels)
+    if marker_spans_required>512: raise ValueError('completion markers exceed composite span capacity')
+    array('uint8_t','hub_marker_pixels',marker_pixels)
+    _,_,_,planet_colors=read_png(ROOT/'res/sprites/Scenery/Hub/green_planet.png')
+    colors = native_palette(palette + character_colors + star_colors + planet_colors)
+    for i in (0, 16, 32, 48, 64): colors[i] = 0
     array('uint16_t', 'hub_palette', colors)
     fade = []
     for step in range(1, 21):
         fade.extend(((c & 31) * step // 20) | ((((c >> 5) & 31) * step // 20) << 5) | ((((c >> 10) & 31) * step // 20) << 10) for c in colors)
     array('uint16_t', 'hub_fade_palette', fade)
+    _, _, action_rows, _ = read_png(ROOT / 'res/sprites/Chakan/chakan_anim_no_weapons.png')
+    actions = [(0, 400)] + [(f * 112, 480) for f in range(4)]
+    for suffix, values in zip(('rows', 'spans', 'pixels'), pack_spans(action_rows, 112, 80, actions, 32)):
+        array('uint8_t' if suffix == 'pixels' else 'uint16_t', 'hub_actions_' + suffix, values)
     collision = json.loads((ROOT / 'src/levels/hub/portal_hub_collision.json').read_text())
     if (collision['width'], collision['height'], collision['cell_size']) != (120, 80, 16):
         raise ValueError('unexpected Hub collision dimensions')

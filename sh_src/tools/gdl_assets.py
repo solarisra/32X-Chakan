@@ -68,3 +68,17 @@ def pack_compact_foreground(rows):
     if len(unique_rows) > 65536:
         raise ValueError('compact row offsets exceed uint16_t range')
     return unique_rows, indices, [v // 5 for v in tilemap]
+
+
+def pack_compact_background(rows, palette_base=0):
+    packed, tilemap = pack_tiles(rows, False, palette_base)
+    unique, lookup, offsets = [], {}, []
+    for i in range(0, len(packed), 2):
+        row = tuple(packed[i:i+2])
+        if row not in lookup:
+            lookup[row] = len(unique)
+            unique.extend(row)
+        offsets.append(lookup[row])
+    if len(unique) > 65536:
+        raise ValueError('compact background row offsets exceed uint16_t')
+    return unique, offsets, [v // 2 for v in tilemap]

@@ -66,7 +66,7 @@
 ; ----------
 ; A    -> bit 21-15 of rom address to set in the bank register
 ; BC  <-  BANKREG
-; A   <-  0
+; A   <-  $FF
 ;
 ; set the bank register for ROM area
 ; = 101 cycles
@@ -85,11 +85,13 @@
             LD  (BC), A             ; #5 (bit 19)               ' 7
             RRCA                    ;                           ' 4
             LD  (BC), A             ; #6 (bit 20)               ' 7
-            RRCA                    ;                           ' 4
-            LD  (BC), A             ; #7 (bit 21)               ' 7
-            XOR A                   ;                           ' 4
-            LD  (BC), A             ; #8 (bit 22 = 0)           ' 7
-            LD  (BC), A             ; #9 (bit 23 = 0)           ' 7
+            ; 32X fixed ROM mirror $880000-$8FFFFF: bits 21/22=0, 23=1.
+            ; Preserve the original 101-cycle banking slot for PCM timing.
+            XOR A                   ; bit 21 = 0              ' 4
+            LD  (BC), A             ; #7                      ' 7
+            LD  (BC), A             ; #8 (bit 22 = 0)         ' 7
+            CPL                     ; bit 23 = 1              ' 4
+            LD  (BC), A             ; #9                      ' 7
 
             endm                    ;                           ' 101
 
@@ -98,7 +100,7 @@
 ; ----------
 ; A    -> bit 22-15 of rom address to set in the bank register
 ; DE  <-  BANKREG
-; A   <-  0
+; A   <-  $FF
 ;
 ; set the bank register for ROM area
 ; = 105 cycles
@@ -117,12 +119,14 @@
             LD  (DE), A             ; #5 (bit 19)               ' 7
             RRCA                     ;                          ' 4
             LD  (DE), A             ; #6 (bit 20)               ' 7
-            RRCA                     ;                          ' 4
-            LD  (DE), A             ; #7 (bit 21)               ' 7
-            RRCA                     ;                          ' 4
-            LD  (DE), A             ; #8 (bit 22)               ' 7
-            XOR A                    ;                          ' 4
-            LD  (DE), A             ; #9 (bit 23 = 0)           ' 7
+            ; 32X fixed ROM mirror $880000-$8FFFFF: bits 21/22=0, 23=1.
+            ; Preserve the original 105-cycle banking slot for PCM timing.
+            XOR A                   ; bit 21 = 0              ' 4
+            LD  (DE), A             ; #7                      ' 7
+            LD  (DE), A             ; #8 (bit 22 = 0)         ' 7
+            CPL                     ; bit 23 = 1              ' 4
+            LD  (DE), A             ; #9                      ' 7
+            NOP                     ; preserve DE timing      ' 4
 
             endm                    ;                           ' 105
 

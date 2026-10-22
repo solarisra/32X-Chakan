@@ -126,6 +126,91 @@
                 }
             },
             "problemMatcher": []
+        },
+        {
+            "label": "MarsDev: Build SH-2 T_EARTH_1",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "-j",
+                "GAME=T_EARTH_1",
+                "release"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "MARSDEV": "/opt/toolchains/mars"
+                }
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "MarsDev: Build SH-2 PORTAL_HUB",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "-j",
+                "GAME=PORTAL_HUB",
+                "release"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "MARSDEV": "/opt/toolchains/mars"
+                }
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "MarsDev: Build SH-2 T_AIR_1",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "-j",
+                "GAME=T_AIR_1",
+                "release"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "MARSDEV": "/opt/toolchains/mars"
+                }
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "MarsDev: Build SH-2 T_WATER_1",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "-j",
+                "GAME=T_WATER_1",
+                "release"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "MARSDEV": "/opt/toolchains/mars"
+                }
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "MarsDev: Build SH-2 T_FIRE_1",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "-j",
+                "GAME=T_FIRE_1",
+                "release"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "MARSDEV": "/opt/toolchains/mars"
+                }
+            },
+            "problemMatcher": []
         }
     ]
 }
