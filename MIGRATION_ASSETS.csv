@@ -17,7 +17,7 @@ levels/Hub/fg_test_level.png,pal_test_level_floor; ts_test_level_floor; map_test
 levels/Hub/fg_test_level_wide.png,pal_test_level_wide_floor; ts_test_level_wide_floor; map_test_level_wide_floor,src/levels/test/test_wide.c,sh_src/res/levels/Hub/fg_test_level_wide.png,identical
 levels/Hub/portal_hub_fg1.png,ts_portal_hub_floor; map_portal_hub_floor,src/levels/hub/portal_hub.c,sh_src/res/levels/Hub/portal_hub_fg1.png,identical
 levels/Hub/portal_starfield.png,pal_portal_starfield; ts_portal_starfield; map_portal_starfield,src/levels/hub/portal_hub.c; src/levels/test/test_small.c; src/levels/test/test_wide.c,sh_src/res/levels/Hub/portal_starfield.png; md_src/res/levels/Hub/portal_starfield.png,identical
-levels/Hub/portalhub_pal0.png,pal0_portal_hub_floor,src/levels/hub/portal_hub.c,sh_src/res/levels/Hub/portalhub_pal0.png,"palette entry 2 differs: source 0x08C, port 0x0AE"
+levels/Hub/portalhub_pal0.png,pal0_portal_hub_floor,src/levels/hub/portal_hub.c,sh_src/res/levels/Hub/portalhub_pal0.png,identical; restored runtime PAL0 entry 2 to source 0x08C
 levels/Hub/portalhub_pal1.png,pal1_portal_hub_floor,src/levels/hub/portal_hub.c,sh_src/res/levels/Hub/portalhub_pal1.png,identical
 levels/T_Air/T_Air_1_bg_wide.png,pal_t_air1_bg; ts_t_air1_bg; map_t_air1_bg,src/levels/terrestrial/air/t_air_1.c,sh_src/res/levels/T_Air/T_Air_1_bg_wide.png,identical
 levels/T_Air/T_Air_1_fg.png,ts_t_air1_fg; map_t_air1_fg,src/levels/terrestrial/air/t_air_1.c,sh_src/res/levels/T_Air/T_Air_1_fg.png,identical

@@ -60,7 +60,8 @@ void test_wide_update(uint16_t pad) {
         player_set_collision_move(collision_move_player);
         player_set_collision_queries(collision_can_drop, collision_can_stand);
     }
-    camera_step(playerBody.x + PLAYER_WIDTH / 2, playerBody.y + playerBody.height / 2);
+    camera_step_velocity(playerBody.x + PLAYER_WIDTH / 2,playerBody.y + playerBody.height / 2,
+        playerBody.velocity_x,player_fixed_to_int(playerBody.fixY));
     star_drift = (star_drift + 1) & 511;
     render_frame.camera_x = cameraPosition.x;
     render_frame.background_x = cameraPosition.x;

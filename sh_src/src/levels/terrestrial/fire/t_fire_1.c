@@ -62,7 +62,8 @@ void t_fire1_update(uint16_t pad) {
     processInput(pad);
     updatePlayer();
     if (playerBody.y >= 1856) spawn();
-    camera_step(playerBody.x + PLAYER_WIDTH / 2, playerBody.y + playerBody.height / 2);
+    camera_step_velocity(playerBody.x + PLAYER_WIDTH / 2,playerBody.y + playerBody.height / 2,
+        playerBody.velocity_x,player_fixed_to_int(playerBody.fixY));
     if (fade_tick < 20) {
         uint16_t colors[48];
         fade_tick++;

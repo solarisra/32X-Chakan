@@ -25,7 +25,15 @@ class PortalHubTests(unittest.TestCase):
         _, _, _, pal0 = read_png(ROOT / 'res/levels/Hub/portalhub_pal0.png', tiled=False)
         _, _, _, pal1 = read_png(ROOT / 'res/levels/Hub/portalhub_pal1.png', tiled=False)
         _, _, _, combined = read_png(ROOT / 'res/levels/Hub/portal_hub_fg1.png', 32)
-        self.assertEqual(pal0 + pal1, combined)
+        # Explicit SGDK runtime palettes from create_level_stages 07e5f08.
+        # PAL0 intentionally overrides the foreground PNG's embedded entry 2.
+        expected0=[0xE0E,0,0x08C,0x246,0x400,0x020,0x8CC,0x200,
+                   0x4AA,0x468,0x224,0x00E,0x00A,0x02C,0x06C,0x0AE]
+        expected1=[0xE0E,0,0x002,0x022,0x004,0x024,0x046,0x068,
+                   0x08A,0x4AC,0,0xA00,0x800,0x600,0x800,0xA00]
+        self.assertEqual(pal0,expected0)
+        self.assertEqual(pal1,expected1)
+        self.assertEqual(combined[:2]+combined[3:],(pal0+pal1)[:2]+(pal0+pal1)[3:])
 
     def test_original_collision_and_doors(self):
         data = json.loads((ROOT / 'src/levels/hub/portal_hub_collision.json').read_text())

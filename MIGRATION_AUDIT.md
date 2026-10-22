@@ -30,8 +30,6 @@ audit.
 | Priority | Area | What remains |
 | --- | --- | --- |
 | Medium | Pause | The source has a pause window and item-selection music. The port retains `STATE_PAUSE` in its enum but implements no pause update, rendering, or input path. The pause bitmap and music track 04 are absent. |
-| Medium | Hub palette parity | `portalhub_pal0.png` entry 2 quantizes to Genesis color `0x08C` in the source branch and `0x0AE` in the port. The converter uses this palette directly, so this is a real color difference; confirm whether the edit was intentional. |
-| Low | Camera API coverage | Follow/deadzone behavior and the Hub Y-region lock are ported. Configurable lookahead, cinematic targeting/smoothing, shake and some camera utility APIs are absent. No active stage calls lookahead/cinematic/shake, so these are deferred capabilities rather than currently missing scene effects. |
 
 Evidence in the port:
 
@@ -41,7 +39,7 @@ Evidence in the port:
 - [Hub interactions](sh_src/src/levels/hub/portal_hub.c): door and sprite destinations select the next incomplete stage, with placeholder guards.
 - [Hub sprites](sh_src/src/levels/hub/hub_sprites.c): portals, flames, planets, potions, hourglasses player and a composite containing all conditional completion markers.
 - [Hub converter](sh_src/tools/convert_portal_hub.py): reads the local PAL0 image directly.
-- [Camera](sh_src/src/camera.c): follow/deadzone subset and regional lock.
+- [Camera](sh_src/src/camera.c): full controls and renderer-adapted scroll helpers, preserving the regional lock.
 
 Source branch references for comparison:
 
@@ -106,7 +104,7 @@ loop still needs stage-exit triggers and later-stage content.
 1. Choose the desired pause/resume behavior and migrate the pause screen/music.
 2. Add actual stage-exit triggers when their design/content is ready; the
    completion API and placeholder guards are implemented.
-3. Decide whether the Hub PAL0 change is intentional.
+3. Hub PAL0 parity is restored to the gameplay branch (see follow-up below).
 4. Keep `create_level_stages` pinned as the gameplay source baseline and record
    intentional fixes separately from omissions.
 5. Update old smoke-test startup assumptions: the portal harness still reserves
@@ -126,3 +124,18 @@ conditional completion markers. `level_manager_complete_current()` records a
 stage exit and returns to Hub through the normal fade. Later-stage runtimes
 remain unavailable, and no stage-exit region has been invented. Save persistence
 is not implemented in the source or this change.
+
+## Camera follow-up completed
+
+Camera controls and scroll-helper coverage have now been ported. Lookahead is
+velocity-aware in every SH-2 level but remains disabled by default. The original
+follow deadzone and Hub lock remain intact. SGDK Map/VDP helpers target GdlFrame
+and explicit background dimensions; shake is clamped to software-renderer bounds.
+
+## Hub palette follow-up completed
+
+PAL0 entry 2 has been restored byte-for-byte from `create_level_stages` 07e5f08
+(`0x08C`). PAL1 and starfield palettes already match that branch. The checked-out
+master and the foreground image's embedded palette use `0x0AE` instead; the
+explicit runtime palette takes precedence, as in SGDK. Tests pin all 32 runtime
+foreground palette entries rather than assuming the image palette is authoritative.

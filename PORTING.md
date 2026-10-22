@@ -957,3 +957,49 @@ The final title-menu flash now advances through two bright frames, a dark
 separation, two bright frames and a final dark frame using completed framebuffer
 presentations. Simulation catch-up cannot consume either pulse or its separating
 dark frame. It still starts at tick 320; skipping the splash cancels the effect.
+
+## Camera API coverage
+
+`camera.h` now exposes configurable deadzones, lookahead magnitudes/smoothing,
+follow/cinematic modes, cinematic center targeting, direct position setters,
+vertical approach, deterministic finite-duration shake, position queries and
+region queries. The existing six-argument Hub region-lock adapter is retained.
+`camera_step_velocity(center_x, center_y, vx, vy)` is wired into every SH-2 level;
+`camera_step(x,y)` remains a zero-velocity compatibility wrapper. Camera init
+resets all mode, lookahead, shake and background-scroll state.
+
+Defaults preserve this port's 156..164 / 104..120 deadzone and disable lookahead
+and shake. Published `cameraPosition` includes shake; logical follow position is
+kept separate so shaking cannot cause permanent drift. Use setters to reposition
+the camera. Small levels clamp to (0,0), and render-time shake is clamped to valid
+viewport bounds on both edges, unlike SGDK's looser VDP output clamp. Smoothing
+uses explicit signed floor division, with shifts limited to 15. Lookahead values
+are nonnegative magnitudes; invalid deadzones are ignored.
+
+The SGDK Map/VDP helpers are adapted to the software renderer:
+
+```c
+camera_apply_foreground(&frame);
+camera_apply_parallax(&frame, &scene.background, 1, 2);
+camera_apply_bg_b_const_scroll_y(&frame, &scene.background, 32); // 0.5px/tick
+```
+
+Background helpers wrap signed offsets to the provided map dimensions, including
+negative rates and non-power-of-two heights. Constant Y scroll uses SGDK's six
+fractional bits and overrides the frame's background Y when called after parallax.
+A zero parallax denominator leaves the frame unchanged. `camera_check_bounds_in_region`
+and `camera_get_region_locked_y` retain the source's inclusive top-left test.
+
+Host camera tests cover follow/deadzone, velocity direction and smoothing, mode
+changes, cinematics, approach convergence, finite shake/no drift, edge safety,
+parallax, reverse/fractional scroll, invalid inputs, tiny maps and region queries.
+The existing Hub transition/region-lock and four stage suites remain regression
+checks. GCC now emits structure-copy `memcpy` calls in the level loaders; a
+freestanding aligned-word/byte fallback is provided alongside the existing memset.
+
+Hub PAL0 now matches `create_level_stages` 07e5f08 byte-for-byte, including entry
+2 (`0x08C`, previously `0x0AE`). The foreground PNG's embedded palette and source
+master differ at that entry; SGDK loads the explicit PAL0 resource, so it remains
+authoritative. PAL1 and starfield already match the gameplay branch. Regression
+checks pin both 16-color foreground banks. 32X output still uses the established
+3-bit-to-5-bit conversion; transparency and palette cycling are unchanged.

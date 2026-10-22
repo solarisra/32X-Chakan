@@ -63,7 +63,8 @@ void portal_hub_init(void) {
     player_set_collision_queries(collision_can_drop, collision_can_stand);
     input_init();
     camera_init(1920, 1280);
-    camera_step(playerBody.x+PLAYER_WIDTH/2,playerBody.y+playerBody.height/2);
+    camera_step_velocity(playerBody.x+PLAYER_WIDTH/2,playerBody.y+playerBody.height/2,
+        playerBody.velocity_x,player_fixed_to_int(playerBody.fixY));
     camera_transition_active=camera_in_region(playerBody.x,playerBody.y,&central_region);
     if (camera_transition_active) camera_set_y(580);
     ticks = 0;
@@ -81,7 +82,8 @@ void portal_hub_update(uint16_t pad) {
         player_set_collision_queries(collision_can_drop, collision_can_stand);
     }
     int16_t previous_camera_y=cameraPosition.y;
-    camera_step(playerBody.x + PLAYER_WIDTH / 2, playerBody.y + playerBody.height / 2);
+    camera_step_velocity(playerBody.x + PLAYER_WIDTH / 2,playerBody.y + playerBody.height / 2,
+        playerBody.velocity_x,player_fixed_to_int(playerBody.fixY));
     camera_apply_y_region_lock(previous_camera_y,playerBody.x,playerBody.y,
                               &central_region,580,4,&camera_transition_active);
     ticks++;
