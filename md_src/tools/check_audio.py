@@ -18,6 +18,7 @@ def main():
     parser.add_argument('--portal-entry', choices=('earth','fire','water','air'),
                         help='place Chakan at an entrance and verify Up transitions and music in a Hub ROM')
     parser.add_argument('--return-hub',action='store_true',help='test Start+A+C after --portal-entry, then re-enter the portal')
+    parser.add_argument('--pause',action='store_true',help='verify Item Selection and saved level music across repeated pause/resume')
     parser.add_argument('--logo',action='store_true',help='verify silent logo startup, scream cue, and transition to STATE_INTRO')
     parser.add_argument('--intro',action='store_true',help='run all five intro scenes and verify the automatic menu transition (requires 6700+ frames)')
     parser.add_argument('--fire1', action='store_true', help='drive Fire 1 and verify SH-2 bounds')
@@ -31,7 +32,9 @@ def main():
         args.logo=True
     if args.return_hub and (not args.portal_entry or args.frames<1200):
         parser.error('--return-hub requires --portal-entry and at least 1200 frames')
-    startup_delay=420 if args.portal_entry else 0
+    if args.pause and (not args.portal_entry or args.frames<900 or args.return_hub):
+        parser.error('--pause requires --portal-entry, at least 900 frames, and no --return-hub')
+    startup_delay=600 if args.portal_entry else 0
     args.frames+=startup_delay
     if args.portal_hub or args.earth1 or args.air1 or args.water1 or args.fire1 or args.portal_entry or args.logo:
         args.wide = True
@@ -89,6 +92,12 @@ def main():
         frame = stats['video']-startup_delay
         if args.logo: return 0
         if args.portal_entry:
+            if stats['video']<startup_delay:
+                # Skip intro, open main menu, then select Start Game. Each
+                # press is released before the next screen consumes input.
+                return int(port==0 and button==3 and any(start<=stats['video']<start+10 for start in (430,470,510)))
+            if args.pause and (500<=frame<630 or 720<=frame<830):
+                return int(port==0 and button==3 and any(a<=frame<a+10 for a in (500,620,720,820)))
             if args.return_hub and 600<=frame<660:
                 return int(port==0 and button in (3,1,8)) # PicoDrive: Start, Genesis A, C
             if args.return_hub and 660<=frame<900:
@@ -153,6 +162,9 @@ def main():
     try:
         previous = 0
         previous_rendered = 0
+        portal_render_start = None
+        paused_music = None
+        pause_audio = 0
         for frame in range(args.frames):
             test_frame=frame-startup_delay
             if args.intro and frame in (1000,3000,6000,6600):
@@ -183,6 +195,25 @@ def main():
                            'water':(608,1152),'air':(1380,1110)}
                 place_player(lib,rom.parent/'Chakan.lst',*positions[args.portal_entry])
             lib.retro_run()
+            if args.pause and test_frame in (480,680,880):
+                from picodrive_state import verify_music_instruments
+                verify_music_instruments(lib,rom.parent/'md_start.lst')
+            if args.pause and test_frame in (550,600,680,750,800,880):
+                from picodrive_state import xgm_playback
+                playing,elapsed,position=xgm_playback(lib)
+                saved=xgm_playback(lib,rom.parent/'md_start.lst')
+                if test_frame in (550,750):
+                    if not playing or not saved[0] or saved[1]<100 or elapsed>=saved[1]:
+                        raise SystemExit('Item Selection did not replace the saved level music')
+                    paused_music=saved
+                    pause_audio=stats['nonzero']
+                elif test_frame in (600,800):
+                    if (not playing or saved!=paused_music or not 70<=elapsed<=130
+                            or stats['nonzero']-pause_audio<100):
+                        raise SystemExit('Menu music did not advance independently of saved level music')
+                elif not playing or not 20<=elapsed-paused_music[1]<=90:
+                    raise SystemExit('Music did not resume from its saved position')
+                print('Pause music check:',test_frame,playing,elapsed,hex(position))
             if args.intro and frame in intro_windows:
                 intro_starts[frame]=read_telemetry()['sh2_rendered_frames']
             if args.intro and frame-120 in intro_windows:
@@ -192,6 +223,8 @@ def main():
                 start=frame-120
                 completed=(snapshot['sh2_rendered_frames']-intro_starts[start])&65535
                 intro_rates[intro_windows[start]]=completed/2
+            if args.portal_entry and test_frame==360:
+                portal_render_start=read_telemetry()['sh2_rendered_frames']
             if args.wide and (frame + 1) % 60 == 0:
                 telemetry = read_telemetry()
                 rendered = telemetry.get('sh2_rendered_frames', 0)
@@ -225,6 +258,8 @@ def main():
         if telemetry.get('sh2_rendered_frames', 0) < 100:
             raise SystemExit('Dual-SH-2 renderer did not progress')
         if args.portal_entry:
+            if portal_render_start is None or ((telemetry['sh2_rendered_frames']-portal_render_start)&65535)<10:
+                raise SystemExit('Portal destination stopped presenting frames')
             expected={'earth':1,'fire':2,'water':3,'air':4}[args.portal_entry]
             if telemetry.get('sh2_level')!=expected:
                 raise SystemExit('Portal failed to switch level/music')

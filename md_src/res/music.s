@@ -6,6 +6,10 @@ music_level:
 #if GAME_PORTAL_HUB
 .incbin "md_src/res/music_stage_select.bin"
 .balign 256
+.global music_pause
+music_pause:
+.incbin "md_src/res/music_pause.bin"
+.balign 256
 .global music_intro
 music_intro:
 .incbin "md_src/res/music_intro.bin"

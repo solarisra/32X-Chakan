@@ -8,6 +8,7 @@ from pathlib import Path
 from convert_logo import generate
 from convert_menu import generate as generate_menu
 from convert_intro import generate as generate_intro
+from convert_pause import generate as generate_pause
 from indexed_png import read_png
 ROOT=Path(__file__).resolve().parent.parent
 class LogoTests(unittest.TestCase):
@@ -41,9 +42,10 @@ class LogoTests(unittest.TestCase):
             (Path(temp)/'logo_data.h').write_text(text)
             (Path(temp)/'menu_data.h').write_text(generate_menu())
             (Path(temp)/'intro_data.h').write_text(generate_intro())
+            (Path(temp)/'pause_data.h').write_text(generate_pause())
             binary=str(Path(temp)/'logo-test')
             files=['tools/tests/logo_state_test.c','src/gamestate.c','src/gamestates/gamestate_logo.c','src/gamestates/gamestate_menu.c','src/gamestates/gamestate_intro.c',
-                   'src/gdl/renderer.c','src/gdl/renderer_direct.c','src/gdl/renderer_planes.c']
+                   'src/pause_menu.c','src/gdl/renderer.c','src/gdl/renderer_direct.c','src/gdl/renderer_planes.c']
             subprocess.run([os.environ.get('HOST_CC','cc'),'-std=c99','-O2','-Wall','-Wextra','-Werror',
                             '-fsanitize=undefined','-fno-sanitize-recover=undefined',
                             '-I'+temp,'-I'+str(ROOT/'inc'),

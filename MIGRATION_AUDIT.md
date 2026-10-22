@@ -1,7 +1,6 @@
 # Migration audit — 2026-10-22
 
-Most implemented content has been migrated. Hub progression feedback/routing has now been migrated; pause remains the main
-missing state. Later-stage content is still stubbed in the source.
+Most implemented content has been migrated. Hub progression feedback/routing has now been migrated; pause is now implemented as a mode within Play. Later-stage content is still stubbed in the source.
 
 ## Scope and baseline
 
@@ -29,11 +28,10 @@ audit.
 
 | Priority | Area | What remains |
 | --- | --- | --- |
-| Medium | Pause | The source has a pause window and item-selection music. The port retains `STATE_PAUSE` in its enum but implements no pause update, rendering, or input path. The pause bitmap and music track 04 are absent. |
 
 Evidence in the port:
 
-- [State dispatch](sh_src/src/gamestate.c): only Logo, Intro, Menu and Play are handled.
+- [State dispatch](sh_src/src/gamestate.c): Logo, Intro, Menu and Play are handled; pause suspends Play without loading another state.
 - [Level IDs](sh_src/inc/level_manager.h): Hub plus four terrestrial stage-1 IDs.
 - [Level manager](sh_src/src/level_manager.c): transitions and return-to-Hub, with persistent per-game completion bits.
 - [Hub interactions](sh_src/src/levels/hub/portal_hub.c): door and sprite destinations select the next incomplete stage, with placeholder guards.
@@ -67,7 +65,7 @@ loop still needs stage-exit triggers and later-stage content.
 | Collision | Geometry/heightmaps, one-way platforms, bounds resolution and door behavior queries are implemented. Hardware-specific streaming/window allocation was adapted rather than copied literally. |
 | Tests | TEST_WIDE is on SH-2; TEST_SMALL remains a selectable Genesis/68000 backend. These are alternate test backends, not missing story stages. |
 | Active SFX | All three declared source effects—scream, intro lightning and menu lightning—are present. Title impacts remain embedded in the unchanged menu recording. |
-| Active stage music | Intro/menu, Hub and all four stage-1 songs are included. Missing track 04 belongs to pause. |
+| Active stage music | Intro/menu, Hub and all four stage-1 songs are included. Track 04 plays during pause; the level track resumes from saved playback state. |
 
 ## Source stubs and unused data, not lost finished gameplay
 
@@ -88,8 +86,7 @@ loop still needs stage-exit triggers and later-stage content.
   The port instead has level respawn/bounds handling; this is not full death
   behavior parity, but the source path is dormant.
 - Eight declared music tracks have no active source C references: 03, 06, 08,
-  10, 12 and 13–15. They remain absent as unused material, separate from the
-  genuinely missing pause track 04. Jump SFX calls are commented out and have
+  10, 12 and 13–15. They remain absent as unused material, separate from track 04, which is now included for pause. Jump SFX calls are commented out and have
   no active resource declaration.
 - Menu PAL1/PAL2 `.pal` declarations have no active C uses. The converted menu
   uses the embedded image palettes and explicit runtime colors; their absent
@@ -101,17 +98,17 @@ loop still needs stage-exit triggers and later-stage content.
 
 ## Verification and maintenance follow-up
 
-1. Choose the desired pause/resume behavior and migrate the pause screen/music.
+1. Pause artwork/music and Start-to-pause/resume are complete; defer inventory
+   and recipe UI until those systems are specified.
 2. Add actual stage-exit triggers when their design/content is ready; the
    completion API and placeholder guards are implemented.
 3. Hub PAL0 parity is restored to the gameplay branch (see follow-up below).
 4. Keep `create_level_stages` pinned as the gameplay source baseline and record
    intentional fixes separately from omissions.
-5. Update old smoke-test startup assumptions: the portal harness still reserves
-   only 420 startup VBlanks and does not navigate Intro/Menu before placing a
-   player. Its old portal scripts cannot validate the new default startup flow
-   unchanged. Older sections of PORTING.md also contain historical statements
-   that menus/SFX are pending; the current state sections supersede them.
+5. The portal smoke harness now navigates Intro/Menu and reserves 600 startup
+   VBlanks before placement/input. It also checks continued destination rendering.
+   Older sections of PORTING.md contain historical statements that menus/SFX
+   are pending; the current state sections supersede them.
 6. Extend performance work only where needed: the intro's measured 60 fps does
    not establish 60 fps for the logo, menu or every gameplay level. PAL timing,
    long play sessions and real hardware still need separate verification.
@@ -139,3 +136,14 @@ PAL0 entry 2 has been restored byte-for-byte from `create_level_stages` 07e5f08
 master and the foreground image's embedded palette use `0x0AE` instead; the
 explicit runtime palette takes precedence, as in SGDK. Tests pin all 32 runtime
 foreground palette entries rather than assuming the image palette is authoritative.
+
+## Pause follow-up completed
+
+The original pause artwork and Item Selection music are migrated. A fresh Start
+press opens/closes the menu within Play; world updates stop without unloading
+the level. There are no cursor, potion or spell sprites in this initial scope.
+Future capacity is four potions of each type, sixteen total. Resume synchronizes
+input and restores the saved level music context after Item Selection plays
+in the menu. Z80 RAM/CPU state, PCM buffers and FM/PSG register state are restored;
+held FM notes are re-keyed because chip envelope phase is not readable. Host state/Hub tests and PicoDrive pause,
+frozen-player and resume checks pass.

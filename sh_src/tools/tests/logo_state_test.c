@@ -5,13 +5,18 @@
 #include "level_manager.h"
 #include "gamestates/gamestate_menu.h"
 #include "gamestates/gamestate_intro.h"
+#include "pause_menu.h"
+#include "input_controls.h"
 static unsigned time_now,cues,play_init,play_updates,state_changes,intro_cues;
 void gamestate_intro_lightning(void) { intro_cues++; }
-static uint16_t palette[80];
+static uint16_t palette[96],synced_pad;
+static unsigned opens,closes;
+void gamestate_play_menu_changed(bool open) {if(open) opens++;else closes++;}
+void level_manager_sync_input(uint16_t pad) {synced_pad=pad;}
 static GdlScene active_scene;
 void gdl_shared_upload(void *dst,const void *src,uint32_t bytes) { memcpy(dst,src,bytes); }
 void gdl_palette_load(uint16_t first,const uint16_t *colors,uint16_t count) {
-    assert(first+count<=80);
+    assert(first+count<=96);
     for (unsigned i=0;i<count;i++) palette[first+i]=colors[i];
 }
 void gdl_palette_schedule(uint16_t first,const uint16_t *colors,uint16_t count) {
@@ -56,7 +61,7 @@ void gamestate_changed(GAME_STATE state) {
     assert(state==STATE_LOGO || state==STATE_INTRO || state==STATE_MENU || state==STATE_PLAY); state_changes++;
 }
 void level_manager_init(void) { assert(currentMenuState==MAIN_MENU); play_init++; }
-void level_manager_update(uint16_t pad) { assert(pad==0x80); play_updates++; }
+void level_manager_update(uint16_t pad) { (void)pad; play_updates++; }
 const GdlFrame *level_manager_render_frame(void) { return 0; }
 int main(void) {
     gamestate_init();
@@ -122,6 +127,23 @@ int main(void) {
     gamestate_update(0); gamestate_update(0x80);
     assert(currentState==STATE_PLAY && play_init==1 && state_changes==4);
     gamestate_update(0x80); assert(play_updates==1 && !gamestate_render_frame());
+    gamestate_update(0); unsigned frozen=play_updates;
+    gamestate_update(BUTTON_START);
+    assert(gamestate_is_paused() && currentState==STATE_PLAY && opens==1);
+    for(unsigned i=0;i<8;i++) gamestate_update(BUTTON_START);
+    assert(play_updates==frozen && gamestate_is_paused());
+    /* Direction/action buttons have no menu function in this first slice. */
+    gamestate_update(0);gamestate_update(BUTTON_RIGHT|BUTTON_A|BUTTON_C);
+    assert(gamestate_is_paused() && play_updates==frozen);
+    GdlFrame paused_frame;assert(gamestate_prepare_frame(&paused_frame)==&paused_frame);
+    assert(paused_frame.screen && !paused_frame.screen->animation && paused_frame.sprite_count==0);
+    assert(gdl_frame_valid(&active_scene,&paused_frame));
+    gamestate_update(0);gamestate_update(BUTTON_START);
+    assert(!gamestate_is_paused() && closes==1 && synced_pad==BUTTON_START && play_updates==frozen);
+    gamestate_update(BUTTON_START); /* Held resume does not immediately reopen. */
+    assert(!gamestate_is_paused() && play_updates==frozen+1);
+    gamestate_update(BUTTON_RETURN_HUB);
+    assert(!gamestate_is_paused() && play_updates==frozen+2);
     /* A one-tick pulse survives its off tick when rendering every two ticks. */
     gamestate_intro_init(0);
     assert(!gamestate_intro_update(0)); /* tick 0 */

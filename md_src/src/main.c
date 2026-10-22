@@ -68,6 +68,7 @@ void do_commands(void) {
 #if GAME_PORTAL_HUB
     case 11: sound_logo_scream(); break;
     case 14: sound_intro_lightning(); break;
+    case 15: sound_set_paused((cmd & 1) != 0); break;
     case 12: sh2_gamestate=cmd & 255;
         if (sh2_gamestate==1) sound_play_level(5);
         if (sh2_gamestate==2) { sound_play_level(5); sound_menu_lightning(); }

@@ -11,7 +11,7 @@ static const GdlTilemap planes[]={
  {menu_options_tiles,menu_options_map,MENU_OPTIONS_W,MENU_OPTIONS_H,0}};
 static const GdlSpanImage *const letters[]={&menu_C_image,&menu_h_image,&menu_a_image,&menu_k_image,&menu_a_image,&menu_n_image};
 static const int16_t positions[]={7,47,79,111,143,175};
-static GdlScene scene;
+static GDL_LEVEL_ASSETS(menu) GdlScene scene;
 static GDL_LEVEL_ASSETS(menu) GdlFrame frame;
 static uint16_t tick,previous;
 static uint8_t final_flash;

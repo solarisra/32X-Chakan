@@ -10,7 +10,7 @@ for the game image.
 The normal `GAME=PORTAL_HUB` ROM now boots through `STATE_LOGO` → `STATE_INTRO` → `STATE_MENU`. The menu includes lightning, title reveal, eye cycling,
 intro music, Start Game and Options. Start opens the main menu; Left/Right select,
 and Start confirms. Options retains the source Back/unused second selection.
-Start Game enters `STATE_PLAY`/Portal Hub. `STATE_PAUSE` retains its source enum value but is not implemented yet. Standalone stage
+Start Game enters `STATE_PLAY`/Portal Hub. Pause is handled inside `STATE_PLAY`; `STATE_PAUSE` remains a reserved source enum value. Standalone stage
 builds continue to boot directly into their selected stage for testing. Start
 +A+C returns to the Hub during gameplay and does not replay the logo.
 
@@ -1003,3 +1003,64 @@ master differ at that entry; SGDK loads the explicit PAL0 resource, so it remain
 authoritative. PAL1 and starfield already match the gameplay branch. Regression
 checks pin both 16-color foreground banks. 32X output still uses the established
 3-bit-to-5-bit conversion; transparency and palette cycling are unchanged.
+
+## Pause menu within Play
+
+A fresh Start press during gameplay opens the original 320x224 pause window;
+after releasing Start, pressing it again resumes the same loaded session. The
+world update is suspended, including physics, camera, level transitions, scenery
+and palette animation. Current game state and progression remain intact. Other
+buttons do not navigate, confirm or close this initial menu. Start+A+C retains
+its return-to-Hub behavior during normal gameplay rather than opening pause.
+
+`pause_menu.c` supplies a prepared screen from the original 4bpp BMP, using
+reserved palette indices 80–95. It leaves gameplay palettes and level SDRAM
+assets untouched. A dedicated non-inlined pause renderer allocates its temporary
+frame only while paused; normal gameplay does not reserve that frame on the
+master stack. The window adds no cursor/potion/spell sprites. On resume, input history, jump-held
+state and the return chord are synchronized to avoid replaying menu input.
+
+Pause saves the level's complete 8 KiB Z80 RAM and both CPU register banks at
+an explicit frame-boundary handshake, then starts Item Selection. The 68000
+follows the compiled XGM stream to shadow write-only FM/PSG registers. Resume
+restores the saved driver, sample table, PCM buffers, stream position, chip
+registers and key gates after the Z80/YM2612 reset, then continues the level
+track. The host keeps independent register shadows for menu and level music.
+The saved CPU stack uses $1EEC–$1EFF, outside the 64-entry PCM sample table.
+Hardware oscillator/envelope phase cannot be restored; held FM notes are
+re-keyed on resume. Pause is a mode of `STATE_PLAY`, so state/level
+initialization is not run on resume. Standalone stage test backends continue to
+bypass the main game-state controller.
+
+Recipes, collection rules and effects are deferred. The intended future
+inventory capacity is four each of Air, Earth, Fire and Water (sixteen total).
+Potion icons and alchemy spell icons will only appear when their inventory and
+combination conditions are satisfied; none are added in this slice.
+
+Validation: host tests verify edge-triggered Start, frozen level updates, other
+buttons staying inert, sprite-free pause rendering, input synchronization and
+resume without immediate reopening. The Hub transition suite still passes.
+PicoDrive captures confirmed the original pause window and restored Hub, and
+serialized player state remained unchanged across fifty paused VBlanks.
+
+### Water entry / pause-frame stack regression
+
+The initial pause integration reserved a GdlFrame in `m_main` on every path.
+Together with Water's nested priority renderer, this exhausted the master's
+4 KiB reserved stack and overwrote game state. Water could stay dark with no
+movement even when pause had never been opened. The pause frame now lives in
+`render_paused()`, marked noinline to keep it off the gameplay stack. In the
+release build inspected for this fix, m_main's local stack allocation decreased
+from 1492 to 288 bytes.
+
+PicoDrive checks now cover direct Water entry, Hub pause/resume followed by Water
+entry, pausing/resuming inside Water, actual player movement and continuing
+frame presentations. All four portal destinations also pass. The permanent
+portal smoke harness reserves 600 startup VBlanks, explicitly navigates Intro
+and Menu, and rejects destinations that stop presenting frames after entry.
+
+```sh
+python3 md_src/tools/check_audio.py --core /path/to/picodrive_libretro.so --portal-entry water --frames 1200
+```
+
+Music pause regression: `python3 md_src/tools/check_audio.py --core /path/to/picodrive_libretro.so --portal-entry water --pause --frames 900` checks two pause/resume cycles, independent menu playback, frozen saved level state, resumed song ticks and FM instrument registers against the emulated YM2612.

@@ -38,13 +38,13 @@ menus/main_menu_pal0.pal,pal0_menu_a,,sh_src/res/menus/main_menu_pal0.pal,identi
 menus/main_menu_pal1.pal,pal1_menu_b; pal2_menu_title,,,missing
 menus/main_menu_splash_lettering.png,ts_menu_splash; map_menu_splash,src/gamestates/gamestate_menu.c,sh_src/res/menus/main_menu_splash_lettering.png,identical
 menus/options_menu_lettering.png,ts_options_menu_text; map_options_menu_text,src/gamestates/gamestate_menu.c,sh_src/res/menus/options_menu_lettering.png,identical
-menus/pause_menu.bmp,window_pause_menu,src/gamestate.c,,missing: STATE_PAUSE
+menus/pause_menu.bmp,window_pause_menu,src/gamestate.c,sh_src/res/menus/pause_menu.bmp,identical; pause artwork implemented within STATE_PLAY
 menus/sgdk_retro_logo.png,sgdk_retro_logo; pal_logo_blue,src/gamestates/gamestate_logo.c,sh_src/res/sgdk_retro_logo.png,identical
 menus/sgdk_retro_logo_red.png,pal_logo_red,src/gamestates/gamestate_logo.c,sh_src/res/sgdk_retro_logo_red.png,identical
 music/01 - Intro Theme.vgm,music_intro,src/gamestates/gamestate_intro.c; src/gamestates/gamestate_menu.c,md_src/res/music/01 - Intro Theme.vgm,identical
 music/02 - Stage Select.vgm,music_stage_select,src/levels/hub/portal_hub.c; src/levels/test/test_small.c; src/levels/test/test_wide.c,md_src/res/music/02 - Stage Select.vgm,identical
 music/03 - Story Interlude.vgm,music_story_interlude,,,missing
-music/04 - Item Selection.vgm,music_item_selection,src/gamestate.c,,missing: pause music
+music/04 - Item Selection.vgm,music_item_selection,src/gamestate.c,md_src/res/music/04 - Item Selection.vgm,identical; pause music converted and played
 music/05 - Fire Dimension 1.vgm,music_fire_dimension_1,src/levels/terrestrial/fire/t_fire_1.c,md_src/res/music/05 - Fire Dimension 1.vgm,identical
 music/06 - Fire Dimension 2.vgm,music_fire_dimension_2,,,missing
 music/07 - Earth Dimension 1.vgm,music_earth_dimension_1,src/levels/terrestrial/earth/t_earth_1.c,md_src/res/music/07 - Earth Dimension 1.vgm,identical

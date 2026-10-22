@@ -18,6 +18,7 @@ void level_manager_update(uint16_t pad);
 const GdlFrame *level_manager_render_frame(void);
 GameLevel level_manager_current(void);
 bool level_manager_available(GameLevel level);
+void level_manager_sync_input(uint16_t pad);
 /* Called by a stage exit: record completion and fade back to the Hub. */
 bool level_manager_complete_current(void);
 /* Backend supplied by the master: sends the selected track to the 68000. */

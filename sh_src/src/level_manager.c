@@ -51,6 +51,11 @@ void level_manager_init(void) {
     levels[current].init();
     level_music_play(current);
 }
+void level_manager_sync_input(uint16_t pad) {
+    prevJoyInput=pad;
+    return_held=(pad&BUTTON_RETURN_HUB)==BUTTON_RETURN_HUB;
+    player_set_jump_held((pad&BUTTON_JUMP)!=0);
+}
 void level_manager_update(uint16_t pad) {
     bool return_down=(pad&BUTTON_RETURN_HUB)==BUTTON_RETURN_HUB;
     bool return_pressed=return_down && !return_held;

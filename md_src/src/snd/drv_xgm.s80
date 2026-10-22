@@ -627,6 +627,58 @@ init
             LD      (COMMAND), A    ; command cleared
             JP      start           ; jump to start
 
+; Host context switch. The entry at $20 is used only after restoring RAM.
+; Save at a frame boundary, where no chip write or PCM update is in flight.
+            BLOCK   $0020-$
+context_restore
+            DI
+            LD      SP, $1F00-20
+            POP     IY
+            POP     IX
+            EXX
+            POP     HL
+            POP     DE
+            POP     BC
+            EXX
+            EX      AF, AF'
+            POP     AF
+            EX      AF, AF'
+            POP     HL
+            POP     DE
+            POP     BC
+            POP     AF
+            LD      HL, COMMAND
+            RES     7, (HL)
+            XOR     A
+            LD      ($0101), A
+            JP      external_com
+
+context_save
+; $1EEC-$1EFF is beyond the 64-entry sample table at $1C00-$1CFF.
+; Keep the context stack clear of the tightly packed code below $1600.
+            LD      SP, $1F00
+            PUSH    AF
+            PUSH    BC
+            PUSH    DE
+            PUSH    HL
+            EX      AF, AF'
+            PUSH    AF
+            EX      AF, AF'
+            EXX
+            PUSH    BC
+            PUSH    DE
+            PUSH    HL
+            EXX
+            PUSH    IX
+            PUSH    IY
+            LD      A, 1
+            LD      ($0101), A
+.wait_host
+            LD      A, (COMMAND)
+            BIT     7, A
+            JR      NZ, .wait_host
+            JP      context_restore ; recover if the host cancels its request
+
 
 ; ###########################       main       ##############################
 
@@ -2501,6 +2553,8 @@ xgm_stopped_cont
 external_com                            ;                           ' 149
             LD      SP, STACK           ; restore stack             ' 10    |
             LD      HL, COMMAND         ; HL point on COMMAND       ' 10    | 20 (159)
+            BIT     7, (HL)             ; host snapshot request
+            JP      NZ, context_save
 
 .chk_xgm_play
             BIT     XGM_PLAY_SFT, (HL)  ; play XGM command ?        ' 12    |

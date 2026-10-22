@@ -205,7 +205,7 @@ sh_src/%.o: sh_src/%.cpp
 
 clean:
 	rm -f $(MDOBJS) $(SHOBJS) $(MDCS:.c=.d) $(SHCS:.c=.d)
-	rm -f sh_src/res/intro_data.h md_src/res/intro_lightning.bin md_src/res/menu_letter.bin md_src/res/menu_lightning.bin sh_src/res/menu_data.h md_src/res/music_intro.bin sh_src/res/logo_data.h md_src/res/logo_scream.bin md_src/res/test_small_data.h md_src/res/sprites.h sh_src/res/test_wide_data.h sh_src/res/portal_hub_data.h sh_src/res/t_earth1_data.h sh_src/res/t_air1_data.h sh_src/res/t_water1_data.h sh_src/res/t_fire1_data.h
+	rm -f sh_src/res/pause_data.h md_src/res/music_pause.bin sh_src/res/intro_data.h md_src/res/intro_lightning.bin md_src/res/menu_letter.bin md_src/res/menu_lightning.bin sh_src/res/menu_data.h md_src/res/music_intro.bin sh_src/res/logo_data.h md_src/res/logo_scream.bin md_src/res/test_small_data.h md_src/res/sprites.h sh_src/res/test_wide_data.h sh_src/res/portal_hub_data.h sh_src/res/t_earth1_data.h sh_src/res/t_air1_data.h sh_src/res/t_water1_data.h sh_src/res/t_fire1_data.h
 	rm -f md_src/res/music_fire_dimension_1.bin md_src/res/music_water_dimension_1.bin md_src/res/music_air_dimension_1.bin md_src/res/music_stage_select.bin md_src/res/music_earth_dimension_1.bin md_src/res/drv_xgm.bin md_src/res/drv_xgm.lst
 	rm -f $(MDTARGET).bin $(MDTARGET).elf $(MDTARGET).lst
 	rm -f $(TARGET).32x $(TARGET).elf $(TARGET).lst
@@ -260,3 +260,13 @@ md_src/res/intro_lightning.bin: md_src/tools/convert_logo_sound.py md_src/res/sf
 	$(PYTHON) -c "import sys; from pathlib import Path; sys.path.insert(0,'md_src/tools'); from convert_logo_sound import generate; Path('$@').write_bytes(generate(Path('md_src/res/sfx/intro_lightning.wav'),4))"
 
 md_src/res/music.o: md_src/res/intro_lightning.bin
+
+sh_src/res/pause_data.h: sh_src/tools/convert_pause.py sh_src/tools/indexed_png.py sh_src/tools/gdl_assets.py sh_src/res/menus/pause_menu.bmp
+	$(PYTHON) sh_src/tools/convert_pause.py
+
+sh_src/src/pause_menu.o: sh_src/res/pause_data.h
+
+md_src/res/music_pause.bin: md_src/res/music/04\ -\ Item\ Selection.vgm
+	$(MDBIN)/xgmtool "$<" $@ -s -n
+
+md_src/res/music.o: md_src/res/music_pause.bin

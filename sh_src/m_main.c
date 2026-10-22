@@ -45,6 +45,17 @@ void gamestate_changed(GAME_STATE state) {
     MARS_SYS_COMM0=0x0C00 | state;
     while (MARS_SYS_COMM0) {}
 }
+/* Keep the pause frame off the normal gameplay call stack. Water's priority
+ * compositor already has substantial nested scanline/descriptor scratch data. */
+static __attribute__((noinline)) uint32_t render_paused(GdlRenderTiming *timing) {
+    GdlFrame scratch;
+    return gdl_render_frame(gamestate_prepare_frame(&scratch),timing);
+}
+void gamestate_play_menu_changed(bool open) {
+    while (MARS_SYS_COMM0) {}
+    MARS_SYS_COMM0=0x0F00 | open;
+    while (MARS_SYS_COMM0) {}
+}
 void gamestate_intro_lightning(void) {
     while (MARS_SYS_COMM0) {}
     MARS_SYS_COMM0=0x0E00;
@@ -88,7 +99,12 @@ int m_main(void) {
         MARS_SYS_COMM4 = cameraPosition.x;
         MARS_SYS_COMM6 = playerBody.x;
         GdlRenderTiming timing;
+#if GAME_PORTAL_HUB
+        uint32_t sequence=gamestate_is_paused()?render_paused(&timing):
+            gdl_render_frame(level_render_frame(),&timing);
+#else
         uint32_t sequence = gdl_render_frame(level_render_frame(), &timing);
+#endif
         if (!sequence) continue;
 #if GAME_PORTAL_HUB
         gamestate_frame_presented();

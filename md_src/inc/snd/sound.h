@@ -4,6 +4,7 @@
 #include <stdint.h>
 bool sound_init(void);
 void sound_update(void);
+void sound_set_paused(bool paused);
 void sound_logo_scream(void);
 void sound_menu_lightning(void);
 void sound_intro_lightning(void);

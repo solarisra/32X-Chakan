@@ -7,5 +7,7 @@ void gamestate_init(void);
 void gamestate_update(uint16_t pad);
 const GdlFrame *gamestate_render_frame(void);
 void gamestate_frame_presented(void);
+bool gamestate_is_paused(void);
+const GdlFrame *gamestate_prepare_frame(GdlFrame *scratch);
 void gamestate_changed(GAME_STATE state); /* Master/68000 service callback. */
 #endif
