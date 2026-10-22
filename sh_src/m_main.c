@@ -50,11 +50,6 @@ void gamestate_intro_lightning(void) {
     MARS_SYS_COMM0=0x0E00;
     while (MARS_SYS_COMM0) {}
 }
-void gamestate_menu_letter(void) {
-    while (MARS_SYS_COMM0) {}
-    MARS_SYS_COMM0=0x0D00;
-    while (MARS_SYS_COMM0) {}
-}
 void gamestate_logo_scream(void) {
     while (MARS_SYS_COMM0) {}
     MARS_SYS_COMM0=0x0B00;

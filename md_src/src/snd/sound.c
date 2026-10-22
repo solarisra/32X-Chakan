@@ -103,13 +103,13 @@ bool sound_init(void) {
 #endif
 }
 #if GAME_PORTAL_HUB
-extern const uint8_t logo_scream[], logo_scream_end[], menu_lightning[], menu_lightning_end[], menu_letter[], menu_letter_end[], intro_lightning[], intro_lightning_end[];
+extern const uint8_t logo_scream[], logo_scream_end[], menu_lightning[], menu_lightning_end[], intro_lightning[], intro_lightning_end[];
 static void play_pcm(const uint8_t *sample,const uint8_t *end,uint16_t channel) {
     if (!sound_ready) return;
     uint32_t address=cartridge_address(sample);
     uint32_t length=end-sample;
     take_bus();
-    /* Separate sample slots/channels let title hits overlap the lightning bed. */
+    /* Keep each effect channel in its own sample slot. */
     uint16_t slot=63-channel, entry=0x1C00+slot*4, command=0x108+channel*2;
     ZRAM[entry]=address>>8; ZRAM[entry+1]=address>>16;
     ZRAM[entry+2]=length>>8; ZRAM[entry+3]=length>>16;
@@ -119,8 +119,7 @@ static void play_pcm(const uint8_t *sample,const uint8_t *end,uint16_t channel) 
 }
 void sound_logo_scream(void) { play_pcm(logo_scream,logo_scream_end,0); }
 void sound_intro_lightning(void) { play_pcm(intro_lightning,intro_lightning_end,0); }
-void sound_menu_letter(void) { play_pcm(menu_letter,menu_letter_end,1); }
-void sound_menu_lightning(void) { play_pcm(menu_lightning,menu_lightning_end,0); }
+void sound_menu_lightning(void) { play_pcm(menu_lightning,menu_lightning_end,2); }
 extern const uint8_t music_intro[], music_earth[], music_fire[], music_water[], music_air[];
 bool sound_play_level(uint16_t level) {
     const uint8_t *music;

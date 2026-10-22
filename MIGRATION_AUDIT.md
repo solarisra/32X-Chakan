@@ -61,14 +61,14 @@ loop still needs stage-exit triggers and later-stage content.
 | --- | --- |
 | Logo | Pixels, palette cycles, scream, timing and fades migrated; centering and invalid initial color phases intentionally corrected. |
 | Five-scene intro | All story art/text, sprite animation, lightning recording/palette flashes, fades, scrolling and sand cycling migrated. Prepared-screen compositor is verified at 60 presentations/s in all five scene windows in PicoDrive. |
-| Menu | Lightning, title, eye animation, splash/main/options screens, cursor, intro music and Start Game migrated. Letter impacts are deliberately synchronized rather than preserving the source recording's mismatch. |
+| Menu | Lightning, title, eye animation, splash/main/options screens, cursor, intro music and Start Game migrated. The full recording is preserved; letter reveals are advanced to follow its embedded impacts. |
 | Options | Source behavior is preserved: Back works; the second selection is unused. There are no functioning settings in the source to migrate. |
 | Hub | Terrain, starfield, eight-tick palette cycle, regional camera lock, planets, flames, terrestrial portals, potions/hourglasses and stage-1 entrance interactions are covered. Completion feedback/routing and markers are now migrated. |
 | Four terrestrial stage-1 levels | Earth, Fire, Water and Air maps, music, collision and implemented rendering effects are covered. Fire 1 comes from `create_level_stages`; its master counterpart is empty. |
 | Player | Standing/walking/jump/fall/landing, crouch/roll, short collider/headroom, drop-through, variable jump height, coyote time and jump buffering are present. |
 | Collision | Geometry/heightmaps, one-way platforms, bounds resolution and door behavior queries are implemented. Hardware-specific streaming/window allocation was adapted rather than copied literally. |
 | Tests | TEST_WIDE is on SH-2; TEST_SMALL remains a selectable Genesis/68000 backend. These are alternate test backends, not missing story stages. |
-| Active SFX | All three declared source effects—scream, intro lightning and menu lightning—are present. Title impacts are derived from the menu recording. |
+| Active SFX | All three declared source effects—scream, intro lightning and menu lightning—are present. Title impacts remain embedded in the unchanged menu recording. |
 | Active stage music | Intro/menu, Hub and all four stage-1 songs are included. Missing track 04 belongs to pause. |
 
 ## Source stubs and unused data, not lost finished gameplay

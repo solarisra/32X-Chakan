@@ -5,13 +5,8 @@
 #include "level_manager.h"
 #include "gamestates/gamestate_menu.h"
 #include "gamestates/gamestate_intro.h"
-static unsigned time_now,cues,play_init,play_updates,state_changes,letter_cues,intro_cues;
+static unsigned time_now,cues,play_init,play_updates,state_changes,intro_cues;
 void gamestate_intro_lightning(void) { intro_cues++; }
-void gamestate_menu_letter(void) {
-    assert(currentMenuState==MENU_SPLASH);
-    assert(gamestate_render_frame()->sprite_count==0);
-    letter_cues++;
-}
 static uint16_t palette[80];
 static GdlScene active_scene;
 void gdl_shared_upload(void *dst,const void *src,uint32_t bytes) { memcpy(dst,src,bytes); }
@@ -109,17 +104,23 @@ int main(void) {
             assert(palette[8]==(8u|(17u<<5)|(22u<<10)));
         }
         if(i==130) check_lightning_priority();
-        if(i<294) assert(letter_cues==0);
-        if(i>=294 && i<372) assert(letter_cues==1+(i-294)/13);
+        if(i>=318 && i<=324) {
+            bool lit=i==319 || i==320 || i==322 || i==323;
+            assert((palette[1]!=0)==lit);
+        }
+        if(i>=379 && i<=384) assert(palette[1]==0);
+        if(i<284) assert(gamestate_render_frame()->sprite_count==0);
+        if(i>=284 && i<362) assert(gamestate_render_frame()->sprite_count==1+(i-284)/13);
+        gamestate_frame_presented();
     }
     assert(!gamestate_render_frame()->background_priority);
-    assert(currentMenuState==SPLASH_START && letter_cues==6);
+    assert(currentMenuState==SPLASH_START);
     gamestate_update(0x80); assert(currentMenuState==MAIN_MENU);
     gamestate_update(0x80); assert(currentState==STATE_MENU);
     gamestate_update(8); gamestate_update(0x80); assert(currentMenuState==OPTIONS_MENU);
     gamestate_update(0); gamestate_update(0x80); assert(currentMenuState==MAIN_MENU);
     gamestate_update(0); gamestate_update(0x80);
-    assert(currentState==STATE_PLAY && play_init==1 && state_changes==4 && letter_cues==6);
+    assert(currentState==STATE_PLAY && play_init==1 && state_changes==4);
     gamestate_update(0x80); assert(play_updates==1 && !gamestate_render_frame());
     /* A one-tick pulse survives its off tick when rendering every two ticks. */
     gamestate_intro_init(0);
@@ -142,5 +143,15 @@ int main(void) {
     for(unsigned i=0;i<9;i++) assert(!gamestate_intro_update(0x80));
     assert(gamestate_intro_update(0x80));
     for(unsigned i=0;i<64;i++) assert(palette[i]==0);
+    /* Catch-up crosses the entire old flash window before presentation. */
+    gamestate_menu_init(0);
+    for(unsigned i=0;i<=324;i++) assert(!gamestate_menu_update(0));
+    assert(palette[1]!=0);
+    const bool phases[]={true,false,true,true,false,false};
+    for(unsigned i=0;i<6;i++) {
+        gamestate_menu_presented();
+        for(unsigned step=0;step<4;step++) assert(!gamestate_menu_update(0));
+        assert((palette[1]!=0)==phases[i]);
+    }
     return 0;
 }

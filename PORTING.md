@@ -271,10 +271,12 @@ explicit VS Code build tasks.
   per row. All 27 source tile definitions and their directional flags are
   preserved, including the eight explicitly one-way profiles (IDs 8..11 and
   15..18), the partial-width tile 13, and floor-only profiles.
-- The source's world-space raster bands are preserved, with animated drift tuned
-  19% slower than the source after two 10% tuning reductions: camera X/2 through
-  world Y=288; a per-scanline gradient from about 0.41 to 1.62 pixels/tick over Y=289..383;
-  and about 2.02 pixels/tick from Y=384 downward. Drift adds to camera parallax,
+- The source's world-space raster bands and 8.8 scroll rates are preserved:
+  camera X/2 through world Y=288; a per-scanline gradient from 0.5 to 2 pixels/tick
+  over Y=289..383; and 2.5 pixels/tick from Y=384 downward. The earlier 81%
+  drift tuning was removed after hardware testing reported a two-position
+  flicker in the lower water. Its near-integer 2.02px/tick cadence was a possible
+  contributor; the restored lower band alternates two- and three-pixel steps. Drift adds to camera parallax,
   background Y follows camera Y, and X wraps across 512 pixels. The immutable
   frame snapshot includes all 224 scanline offsets.
 - Priority decoding follows the source's enabled base priority on both planes.
@@ -897,10 +899,13 @@ Compiler-generated C header dependencies have now been added. A dedicated
 linker section for RAM code can replace the current code-in-`.data` convention
 and remove its warning.
 
-Menu title impacts are extracted by `md_src/tools/convert_menu_sound.py` and
-triggered by the same SH-2 update that reveals each letter. The original WAV's
-prerecorded title segment is muted, while lightning continues on a separate PCM
-channel. Skipping the reveal shows the title without triggering six impacts.
+The menu recording is now preserved in full by `convert_menu_sound.py`.
+Letter reveals start at tick 286 (about 4.76 seconds) and advance at thirteen-tick
+intervals to follow its embedded impacts. There are no additional per-letter PCM
+commands. The previous extraction/muting approach removed lightning along with
+the impacts and has been removed. The full menu recording plays on PCM channel
+2, matching the source's SOUND_PCM_CH3, with its own sample slot. Audible
+alignment and lightning tails should be confirmed on hardware.
 
 ## Hub progression
 
@@ -938,3 +943,17 @@ by 200 spans in the composite, leaving the player/scenery sprite budget intact.
 python3 -m unittest discover -s sh_src/tools -p test_level_progress.py
 python3 -m unittest discover -s sh_src/tools -p test_portal_transitions.py
 ```
+
+Water source-rate regression checks verify all scanline offsets and the lower
+band's 2/3-pixel cadence across phase wrap. This restores the SGDK timing without
+changing priority/opacity. Hardware confirmation of the visual improvement is
+still needed; dropped rendered frames can independently cause temporal aliasing.
+
+The title-menu final double lightning flash starts at tick 320 instead of 380,
+advanced one second at 60Hz based on hardware audio/visual comparison. Its
+two-pulse pattern is retained; the original sound recording is unchanged.
+
+The final title-menu flash now advances through two bright frames, a dark
+separation, two bright frames and a final dark frame using completed framebuffer
+presentations. Simulation catch-up cannot consume either pulse or its separating
+dark frame. It still starts at tick 320; skipping the splash cancels the effect.

@@ -27,17 +27,16 @@ int main(void) {
         assert(f->background_y==f->camera_y);
         for (int y=0;y<GDL_HEIGHT;y++) {
             unsigned world=f->camera_y+y,drift=0;
-            if (world>=384) drift=((tick*518)&131071)>>8;
+            if (world>=384) drift=((tick*640)&131071)>>8;
             else if (world>=289) {
                 unsigned speed=128+(world-289)*384/94;
-                speed=(speed*81+50)/100;
                 drift=((tick*speed)&131071)>>8;
             }
             assert(f->background_rows[y]==((f->camera_x/2+drift)&511));
         }
         assert(f->sprites[0].behind_foreground==GDL_SPRITE_BEHIND_PRIORITY);
         /* The entire underwater band is rigid, including across image wrap.
-         * Remove camera parallax before checking the shared 518/256px cadence. */
+         * Remove camera parallax before checking the source 640/256px cadence. */
         int first_underwater=384-f->camera_y;
         if (first_underwater<0) first_underwater=0;
         if (first_underwater<GDL_HEIGHT) {
@@ -47,7 +46,7 @@ int main(void) {
             unsigned drift=(scroll-f->camera_x/2)&511;
             if (underwater_ticks) {
                 unsigned step=(drift-previous_underwater_drift)&511;
-                assert(step==((tick*518)>>8)-(((tick-1)*518)>>8));
+                assert(step==((tick*640)>>8)-(((tick-1)*640)>>8));
             }
             previous_underwater_drift=drift;
             underwater_ticks++;

@@ -40,11 +40,6 @@ intro_lightning:
 .incbin "md_src/res/intro_lightning.bin"
 intro_lightning_end:
 .balign 256
-.global menu_letter, menu_letter_end
-menu_letter:
-.incbin "md_src/res/menu_letter.bin"
-menu_letter_end:
-.balign 256
 .global menu_lightning, menu_lightning_end
 menu_lightning:
 .incbin "md_src/res/menu_lightning.bin"

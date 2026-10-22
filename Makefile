@@ -246,10 +246,10 @@ md_src/res/music_intro.bin: md_src/res/music/01\ -\ Intro\ Theme.vgm
 
 md_src/res/music.o: md_src/res/music_intro.bin
 
-md_src/res/menu_lightning.bin md_src/res/menu_letter.bin &: md_src/tools/convert_menu_sound.py md_src/tools/convert_logo_sound.py md_src/res/sfx/menu_lightning.wav
+md_src/res/menu_lightning.bin: md_src/tools/convert_menu_sound.py md_src/tools/convert_logo_sound.py md_src/res/sfx/menu_lightning.wav
 	$(PYTHON) md_src/tools/convert_menu_sound.py
 
-md_src/res/music.o: md_src/res/menu_lightning.bin md_src/res/menu_letter.bin
+md_src/res/music.o: md_src/res/menu_lightning.bin
 
 sh_src/res/intro_data.h: sh_src/tools/convert_intro.py sh_src/tools/gdl_assets.py sh_src/tools/indexed_png.py $(wildcard sh_src/res/intro/*)
 	$(PYTHON) sh_src/tools/convert_intro.py

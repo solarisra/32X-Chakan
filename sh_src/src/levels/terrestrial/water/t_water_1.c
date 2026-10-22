@@ -28,15 +28,15 @@ static const GdlScene scene = {
 };
 static GdlFrame frame;
 static uint16_t fade_tick;
-/* Water phases use 8.8 precision; animated drift is tuned to 81% of the source.
- * Camera parallax is independent and phases wrap across the 512px image. */
+/* Preserve SGDK's 8.8 scroll rates. Near-integer speed scaling can lock
+ * fine water patterns into repeating visual phases instead of refraction.
+ * Camera parallax is independent; phases wrap across the 512px image. */
 static uint16_t gradient_speed[95];
-#define WATER_DRIFT_PERCENT 81
 static uint32_t gradient_phase[95], fast_phase;
 static void reset_raster(void) {
     uint16_t speed=128,error=0;
     for (uint16_t i=0;i<95;i++) {
-        gradient_speed[i]=(speed*WATER_DRIFT_PERCENT+50)/100; gradient_phase[i]=0;
+        gradient_speed[i]=speed; gradient_phase[i]=0;
         error+=384;
         while (error>=94) { speed++; error-=94; }
     }
@@ -99,7 +99,7 @@ void t_water1_update(uint16_t pad) {
     frame.camera_x = cameraPosition.x;
     frame.camera_y = cameraPosition.y;
     for (uint16_t i=0;i<95;i++) gradient_phase[i]=(gradient_phase[i]+gradient_speed[i])&131071UL;
-    fast_phase=(fast_phase+(640*WATER_DRIFT_PERCENT+50)/100)&131071UL; /* About 2.02px/tick. */
+    fast_phase=(fast_phase+640)&131071UL; /* SGDK: 2.5px/tick, alternating 2/3px integer steps. */
     frame.background_x=cameraPosition.x/2;
     frame.background_y=cameraPosition.y;
     for (uint16_t y=0;y<GDL_HEIGHT;y++) {

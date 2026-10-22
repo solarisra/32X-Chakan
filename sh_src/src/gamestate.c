@@ -34,4 +34,5 @@ const GdlFrame *gamestate_render_frame(void) {
 
 void gamestate_frame_presented(void) {
     if (currentState==STATE_INTRO) gamestate_intro_presented();
+    else if (currentState==STATE_MENU) gamestate_menu_presented();
 }

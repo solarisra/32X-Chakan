@@ -14,6 +14,9 @@ static const int16_t positions[]={7,47,79,111,143,175};
 static GdlScene scene;
 static GDL_LEVEL_ASSETS(menu) GdlFrame frame;
 static uint16_t tick,previous;
+static uint8_t final_flash;
+/* Final double flash: advanced 60 ticks to match the preserved recording. */
+#define FINAL_FLASH_TICK 320
 static GDL_LEVEL_ASSETS(menu) uint16_t colors[48];
 MenuState currentMenuState;
 uint8_t menuSelection;
@@ -28,11 +31,11 @@ static void plane(unsigned index) {
  gdl_scheduler_init(&scene);
 }
 static void screen(MenuState state) {
- currentMenuState=state; menuSelection=0;
+ currentMenuState=state; menuSelection=0; final_flash=0;
  plane(state==SPLASH_START?2:state==MAIN_MENU?3:4);
 }
 void gamestate_menu_init(uint16_t pad) {
- frame=(GdlFrame){0}; tick=0; previous=pad; menuSelection=0; currentMenuState=MENU_SPLASH;
+ frame=(GdlFrame){0}; final_flash=0; tick=0; previous=pad; menuSelection=0; currentMenuState=MENU_SPLASH;
  for(unsigned i=0;i<48;i++) colors[i]=0;
  scene.background=(GdlTilemap){menu_back_tiles,menu_back_map,MENU_BACK_W,MENU_BACK_H,0};
  plane(0); gdl_palette_load(0,colors,48);
@@ -52,9 +55,11 @@ bool gamestate_menu_update(uint16_t pad) {
   if(tick==100) plane(1);
   for(unsigned i=1;i<=8;i++) colors[i]=0;
   unsigned group=0;
+  if(tick==FINAL_FLASH_TICK) final_flash=1;
+  bool final_lit=final_flash==1 || final_flash==2 || final_flash==4 || final_flash==5;
   if(tick<100) {if(tick==1 || tick==2 || tick==4 || tick==5) group=5;
    if(tick==50 || tick==51 || tick==53 || tick==54) group=1;
-  } else if((tick>=130 && tick<133)||(tick>=134 && tick<137)||(tick>=199 && tick<201)||(tick>=202 && tick<204)||(tick>=380 && tick<382)||(tick>=383 && tick<385)) group=1;
+  } else if((tick>=130 && tick<133)||(tick>=134 && tick<137)||(tick>=199 && tick<201)||(tick>=202 && tick<204)||final_lit) group=1;
   if(group) {
    colors[group]=rgb(0,0,1);
    colors[group+1]=tick<100?rgb(0,0,2):rgb(0,0,3);
@@ -70,13 +75,11 @@ bool gamestate_menu_update(uint16_t pad) {
   tick++;
  }
  if(currentMenuState!=MENU_SPLASH) {colors[15]=rgb(0,6,6); for(unsigned i=0;i<16;i++) colors[16+i]=rgb(portrait[i][0],portrait[i][1],portrait[i][2]);}
- unsigned previous_count=frame.sprite_count;
  frame.sprite_count=0;
- unsigned count=currentMenuState==MENU_SPLASH?(tick<296?0:1+(tick-296)/13):6;
+ unsigned count=currentMenuState==MENU_SPLASH?(tick<286?0:1+(tick-286)/13):6;
  if(count>6) count=6;
- /* The impact and new letter share one event rather than separate clocks.
-  * Skipping to a menu shows the full title without replaying its impacts. */
- if(currentMenuState==MENU_SPLASH && count>previous_count) gamestate_menu_letter();
+ /* Embedded title impacts start around 4.76 seconds in the unchanged WAV.
+  * Advance the visuals instead of editing or interrupting the recording. */
  for(unsigned i=0;i<count;i++) frame.sprites[frame.sprite_count++]=(GdlSprite){letters[i],positions[i],7,0,false,0};
  for(unsigned i=0;i<16;i++) {
   uint16_t c=menu_a_palette[i];
@@ -96,3 +99,9 @@ bool gamestate_menu_update(uint16_t pad) {
  gdl_palette_schedule(0,colors,48); return false;
 }
 const GdlFrame *gamestate_menu_frame(void) {return &frame;}
+
+void gamestate_menu_presented(void) {
+ /* Advance on completed presentations, not catch-up simulation updates.
+  * Both bright pulses and their dark separation must actually reach screen. */
+ if(currentMenuState==MENU_SPLASH && final_flash>=1 && final_flash<=6) final_flash++;
+}
